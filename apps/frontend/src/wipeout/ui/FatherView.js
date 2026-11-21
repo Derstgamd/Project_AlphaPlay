@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ABORT_TAPS,
   CD,
@@ -10,7 +10,6 @@ import {
   LAST_CHANCE_MS,
   LEADS,
   ZONES,
-  ZONE_IDS,
 } from "../constants";
 import {
   cdLeft,
@@ -205,23 +204,20 @@ export default function FatherView({
   g,
   now,
   dispatch,
-  localToast,
   muted,
   onToggleMute,
   onLeave,
-  deviceMode = "phone",
-  onToggleDeviceMode,
 }) {
-  const isLaptop = deviceMode === "laptop";
-
-  // Desktop toggles between "map" (Kolkata Desk Home) and "device" (Riya's Laptop OS)
-  const [surface, setSurface] = useState("map");
-  const [app, setApp] = useState(isLaptop ? "pingme" : null); // null | pingme | notes | vault | map
-  const [chatId, setChatId] = useState("rohan");
+  // Always start on Laptop OS ("device") with Messages open; clicking CholoMap opens Workspace ("workspace")
+  const [surface, setSurface] = useState("device"); // "device" | "workspace"
+  const [app, setApp] = useState("pingme"); // null | "pingme" | "notes" | "vault"
+  const [chatId, setChatId] = useState("rohan"); // "rohan" | "ananya" | "gatebot" | "dispatch"
   const [notesSeen, setNotesSeen] = useState(false);
   const [selectedZone, setSelectedZone] = useState("sectorv");
+  const [visibleCountByChat, setVisibleCountByChat] = useState({ rohan: 1, ananya: 0, gatebot: 0 });
+  const [forwardedLogs, setForwardedLogs] = useState([]);
 
-  // Player Kolkata map marking (custom notes + red yarn strings)
+  // Kolkata map marking state (custom notes + red yarn strings on the CholoMap Workspace)
   const [customPins, setCustomPins] = useState([]);
   const [customYarns, setCustomYarns] = useState([]);
   const [noteTitle, setNoteTitle] = useState("");
@@ -229,7 +225,6 @@ export default function FatherView({
   const [pendingNote, setPendingNote] = useState(null);
   const [yarnMode, setYarnMode] = useState(false);
   const [yarnStartId, setYarnStartId] = useState(null);
-  const [phonePinDraft, setPhonePinDraft] = useState("");
 
   const tl = timeLeftMs(g, now);
   const pct = wipePct(g, now);
@@ -241,6 +236,48 @@ export default function FatherView({
   const activeOw = ["lead1", "lead2"].find((k) => g.leads[k].status === "overwriting");
   const trace = traceActive(g, now);
   const locked = isCyberLocked(g, now);
+
+  // Progressive chat unlock: start with ONLY Rohan, then unlock Ananya -> GateBot one by one
+  const lead1Done = g.leads.lead1.status === "saved" || g.leads.lead1.status === "deleted";
+  const lead2Done = g.leads.lead2.status === "saved" || g.leads.lead2.status === "deleted";
+  const ananyaUnlocked = lead1Done || g.leads.lead2.status === "overwriting";
+  const gatebotUnlocked = lead2Done;
+
+  const availableChatIds = [
+    "rohan",
+    ...(ananyaUnlocked ? ["ananya"] : []),
+    ...(gatebotUnlocked ? ["gatebot"] : []),
+  ];
+
+  // Drip messages into the active chat one by one so conversations unfold naturally
+  useEffect(() => {
+    if (chatId === "dispatch" || !CHATS[chatId]) return;
+    const total = CHATS[chatId].messages.length;
+    const shown = visibleCountByChat[chatId] || 0;
+    if (shown >= total) return;
+    const t = setTimeout(() => {
+      setVisibleCountByChat((prev) => ({
+        ...prev,
+        [chatId]: Math.min(total, (prev[chatId] || 0) + 1),
+      }));
+    }, shown === 0 ? 250 : 650);
+    return () => clearTimeout(t);
+  }, [chatId, visibleCountByChat]);
+
+  function handleForwardLead(leadKey, quoteText) {
+    if (g.status !== "playing") return;
+    sfx.good();
+    dispatch({ type: "sendLead", lead: leadKey });
+    setForwardedLogs((prev) => [
+      ...prev,
+      {
+        id: `fwd_${leadKey}_${Date.now()}`,
+        from: leadKey === "lead1" ? "Rohan" : "Ananya (Dept)",
+        text: quoteText,
+        time: fictionClock(g, now),
+      },
+    ]);
+  }
 
   const chatsOpen = !g.pingmePurged && (leadOpen(g.leads.lead1) || leadOpen(g.leads.lead2));
   const badgePingMe = chatsOpen || !!activeOw;
@@ -258,11 +295,20 @@ export default function FatherView({
   const selPing = g.pings.find((p) => p.zone === mapSelected);
   const canAttach = noteTitle.trim().length > 0 || noteBody.trim().length > 0;
 
-  function openApp(next) {
+  // Live dispatch messages feed ("everything comes as a message")
+  const dispatchMessages = (g.events || [])
+    .filter((e) => e.to === "father" || e.to === "both")
+    .slice(-20);
+
+  function openDockApp(next) {
     sfx.tap();
+    if (next === "map") {
+      setSurface("workspace");
+      return;
+    }
     if (next === "notes") setNotesSeen(true);
     setApp(next);
-    if (isLaptop) setSurface("device");
+    setSurface("device");
   }
 
   function handleArmNotebookPin() {
@@ -290,7 +336,6 @@ export default function FatherView({
     setPendingNote(null);
     setNoteTitle("");
     setNoteBody("");
-    setPhonePinDraft("");
   }
 
   function handleDeleteCustomPin(id) {
@@ -321,289 +366,6 @@ export default function FatherView({
     setYarnStartId(null);
   }
 
-  // Shared inner app screens (PingMe, QuickNotes, BangoVault, CholoMap)
-  const renderAppContent = (activeApp) => {
-    if (activeApp === "pingme") {
-      return g.pingmePurged ? (
-        <div className={s.purgedBox}>
-          <div>🚫</div>
-          <h3>PINGME PURGED (50% WIPE)</h3>
-          <p>Chat history was erased by the remote wipe.</p>
-          <p>
-            GateBot&apos;s vehicle plate <b>WB-06-{g.plateNum}</b> is still pinned in your HUD, and QuickNotes still has
-            backup details.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className={s.chatTabs}>
-            {Object.entries(CHATS).map(([id, c]) => {
-              const L = c.lead ? g.leads[c.lead] : null;
-              const hot = L && leadOpen(L);
-              const ow = L?.status === "overwriting";
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className={cx(s.chatTab, chatId === id && s.chatTabOn, ow && s.chatTabOw)}
-                  onClick={() => {
-                    sfx.tap();
-                    setChatId(id);
-                  }}
-                >
-                  {c.name.split(" ")[0]}
-                  {hot && <i className={s.tabDot} />}
-                </button>
-              );
-            })}
-          </div>
-          {(() => {
-            const chat = CHATS[chatId];
-            return (
-              <div className={s.chatBody}>
-                <div className={s.chatInfo}>
-                  <b>{chat.name}</b>
-                  <span>{chat.number ? `${chat.number} · ${chat.seen}` : chat.seen}</span>
-                </div>
-                <div className={s.msgList}>
-                  {chat.messages.map((m, i) => {
-                    const text = m.text.replace("{PLATE}", g.plateNum);
-                    const L = m.lead ? g.leads[m.lead] : null;
-                    const isDeleted = L?.status === "deleted";
-                    const isSaved = L?.status === "saved";
-                    const isOw = L?.status === "overwriting";
-                    return (
-                      <div
-                        key={i}
-                        className={cx(
-                          s.bubble,
-                          m.from === "me" ? s.bubbleMe : s.bubbleThem,
-                          m.lead && !isDeleted && !isSaved && s.bubbleLead,
-                          isOw && s.bubbleOw,
-                          isSaved && s.bubbleSaved,
-                          isDeleted && s.bubbleDeleted
-                        )}
-                      >
-                        {isDeleted ? (
-                          <div className={s.deletedMsg}>🚫 Restored from older backup (wiped remotely)</div>
-                        ) : (
-                          <>
-                            <p>{text}</p>
-                            <span className={s.bubbleTime}>{m.time}</span>
-                          </>
-                        )}
-                        {m.lead && isOw && (
-                          <div className={s.owWarn}>
-                            ⚠️ OVERWRITING IN {secs(L.overwriteEndsAt - now)} — HOLD NOW!
-                          </div>
-                        )}
-                        {m.lead && leadOpen(L) && (
-                          <HoldButton
-                            key={`${m.lead}-${g.round}`}
-                            ms={HOLD_MS[m.lead]}
-                            paused={paused}
-                            tone={isOw ? "red" : "amber"}
-                            label="HOLD 2s: SEND TO LALBAZAR"
-                            sub={`${LEADS[m.lead].via} · clears 2 zones`}
-                            onDone={() => dispatch({ type: "sendLead", lead: m.lead })}
-                          />
-                        )}
-                        {m.lead && isSaved && (
-                          <div className={s.savedTag}>✅ SENT TO LALBAZAR — 2 zones cleared</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-        </>
-      );
-    }
-
-    if (activeApp === "notes") {
-      return g.notesPurged ? (
-        <div className={s.purgedBox}>
-          <div>🚫</div>
-          <h3>QUICKNOTES PURGED (80% WIPE)</h3>
-          <p>All notes have been wiped. Hope you remembered the BangoVault PIN!</p>
-        </div>
-      ) : (
-        <div className={s.notesList}>
-          <div className={s.noteCard}>
-            <div className={s.noteTitle}>Tonight</div>
-            <p>Remind Baba about BP meds. Warm up dal before 9 PM.</p>
-          </div>
-          <div className={cx(s.noteCard, s.notePinCard, now < g.notesCorruptUntil && s.noteCorrupt)}>
-            <div className={s.noteTitle}>BangoVault Backup PIN</div>
-            {now < g.notesCorruptUntil ? (
-              <>
-                <div className={s.pinBigGlitch}>#@!%</div>
-                <p className={s.corruptSub}>
-                  Sync corrupted by remote device · auto-restores in {secs(g.notesCorruptUntil - now)}
-                </p>
-                <HoldButton
-                  key={`restore-${g.notesCorruptUntil}`}
-                  ms={HOLD_MS.restore}
-                  paused={paused}
-                  tone="cyan"
-                  label="HOLD 1s: RESTORE NOTE"
-                  onDone={() => dispatch({ type: "restoreNote" })}
-                />
-              </>
-            ) : (
-              <>
-                <div className={s.pinBig}>{g.vaultPin}</div>
-                <p className={s.pinSub}>Temporary Dept Passcode — enter in BangoVault</p>
-              </>
-            )}
-          </div>
-          <div className={s.noteCard}>
-            <div className={s.noteTitle}>Weird (Last Week)</div>
-            <p>
-              Linked my cloud backup to R&apos;s phone (<b>…44102</b>) &ldquo;for safety&rdquo;?? Should unlink it soon.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    if (activeApp === "vault") {
-      return !g.vaultUnlocked && g.leads.lead3.status !== "saved" ? (
-        <VaultKeypad
-          key={g.vaultRelockUsed ? "relocked" : "fresh"}
-          onSubmit={(pin) => dispatch({ type: "enterPin", pin })}
-        />
-      ) : (
-        <div className={s.dossier}>
-          <div className={s.dossierStamp}>GOVT OF WEST BENGAL — CONFIDENTIAL AUDIT</div>
-          <dl className={s.dossierGrid}>
-            <dt>Project</dt>
-            <dd>SECTOR V URBAN CORRIDOR // TENDER #404</dd>
-            <dt>Flagged Shell Firm</dt>
-            <dd>East-Bypass Infra Holdings</dd>
-            <dt>Encrypted Contractor ID</dt>
-            <dd className={s.contractorId}>{CONTRACTOR_ID}</dd>
-            <dt>Liaison Desk</dt>
-            <dd>Urban Dev. Dept, 4th Floor</dd>
-          </dl>
-          {g.leads.lead3.status === "active" ? (
-            <HoldButton
-              key={`lead3-${g.round}-${g.vaultRelockUsed}`}
-              ms={HOLD_MS.lead3}
-              paused={paused}
-              tone="amber"
-              label="HOLD 3s: UPLOAD TO LALBAZAR CYBER CELL"
-              sub="Triggers a 4-second exact SUV trace on CholoMap"
-              onDone={() => dispatch({ type: "sendLead", lead: "lead3" })}
-            />
-          ) : (
-            <div className={s.uploadedBox}>
-              <div className={s.savedTag}>✅ UPLOADED TO LALBAZAR CYBER CELL</div>
-              <button
-                type="button"
-                className={s.jumpMapBtn}
-                onClick={() => {
-                  sfx.tap();
-                  if (isLaptop) setSurface("map");
-                  else setApp("map");
-                }}
-              >
-                OPEN KOLKATA MAP TO RAID →
-              </button>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // CholoMap (Full Kolkata OSM)
-    return (
-      <>
-        {!isLaptop && (
-          <form
-            className={f.phoneQuickNoteBar}
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!phonePinDraft.trim()) return;
-              setPendingNote({ title: phonePinDraft.trim(), note: "Marked on Kolkata map." });
-            }}
-          >
-            <input
-              className={f.phoneNoteInput}
-              placeholder="Mark a note on Kolkata map..."
-              value={phonePinDraft}
-              onChange={(e) => setPhonePinDraft(e.target.value)}
-            />
-            <button type="submit" className={f.phonePinBtn}>
-              {pendingNote ? "TAP MAP" : "PIN"}
-            </button>
-          </form>
-        )}
-        <div className={s.mapWrap} style={{ minHeight: isLaptop ? 360 : 250 }}>
-          <MapBoard
-            g={g}
-            now={now}
-            role="father"
-            selected={mapSelected}
-            onSelect={setSelectedZone}
-            customPins={customPins}
-            customYarns={customYarns}
-            pendingNote={pendingNote}
-            onPlacePendingNote={handlePlacePin}
-            onCancelPendingNote={() => setPendingNote(null)}
-            yarnMode={yarnMode}
-            yarnStartId={yarnStartId}
-            onYarnNodeClick={handleYarnNodeClick}
-            onExitYarnMode={() => {
-              setYarnMode(false);
-              setYarnStartId(null);
-            }}
-            onDeleteCustomPin={handleDeleteCustomPin}
-          />
-        </div>
-        <div className={s.zoneBar}>
-          <div>
-            <b>{ZONES[mapSelected].name}</b>
-            <small>
-              {ZONES[mapSelected].sub}
-              {g.clearedZones.includes(mapSelected) ? " · CCTV CLEARED" : ""}
-            </small>
-          </div>
-          {selPing && (
-            <span className={cx(s.pingChip, s[`ping_${selPing.result}`])}>
-              {selPing.result === "strong"
-                ? "🔴 STRONG"
-                : selPing.result === "weak"
-                  ? "🟠 NEXT DOOR"
-                  : "🔵 NO SIGNAL"}
-            </span>
-          )}
-        </div>
-        <div className={s.mapControls}>
-          <CdButton
-            icon="📡"
-            label="PING LOCKET"
-            tone="cyan"
-            cdLeft={pingCd}
-            cdTotal={pingTotal}
-            onClick={() => dispatch({ type: "ping", zone: mapSelected })}
-          />
-          <CdButton
-            icon="🚓"
-            label={`RAID ${ZONES[mapSelected].name.split(" ")[0].toUpperCase()}`}
-            tone="red"
-            blocked={rBlock}
-            readyText={`${g.raidsRemaining} VAN${g.raidsRemaining === 1 ? "" : "S"}`}
-            onClick={() => dispatch({ type: "raid", zone: mapSelected })}
-          />
-        </div>
-      </>
-    );
-  };
-
-  // Urgent cross-screen banners
   const urgentBanners = (
     <>
       {activeOw && (
@@ -613,7 +375,7 @@ export default function FatherView({
           onClick={() => {
             sfx.tap();
             setChatId(activeOw === "lead1" ? "rohan" : "ananya");
-            openApp("pingme");
+            openDockApp("pingme");
           }}
         >
           <span>
@@ -622,18 +384,14 @@ export default function FatherView({
           <b>RACE →</b>
         </button>
       )}
-      {trace && (isLaptop ? surface !== "map" : app !== "map") && (
+      {trace && surface !== "workspace" && (
         <button
           type="button"
           className={cx(s.urgentBar, s.urgentBlue)}
-          onClick={() => {
-            sfx.tap();
-            if (isLaptop) setSurface("map");
-            else setApp("map");
-          }}
+          onClick={() => openDockApp("map")}
         >
           <span>🎯 FULL TRACE LIVE ({secs(g.traceUntil - now)}) — SUV PINPOINTED!</span>
-          <b>MAP →</b>
+          <b>CHOLOMAP →</b>
         </button>
       )}
       {g.raidInFlight && (
@@ -647,7 +405,6 @@ export default function FatherView({
     </>
   );
 
-  // Sabotage popups
   const popups = (
     <>
       {g.popup?.kind === "fake_call" && (
@@ -665,358 +422,250 @@ export default function FatherView({
   );
 
   /* ═══════════════════════════════════════════════════════════
-     DESKTOP / LAPTOP MODE — Detective Desk Home + Riya's Laptop
+     CHOLOMAP WORKSPACE — Opens when user clicks CholoMap
      ═══════════════════════════════════════════════════════════ */
-  if (isLaptop) {
-    if (surface === "map") {
-      return (
-        <div className={cx(f.deskSurface, last10 && s.lastChance)}>
-          <div className={f.deskVignette} aria-hidden="true" />
-          <div style={{ position: "relative", zIndex: 470 }}>{urgentBanners}</div>
+  if (surface === "workspace") {
+    return (
+      <div className={cx(f.deskSurface, last10 && s.lastChance)}>
+        <div className={f.deskVignette} aria-hidden="true" />
+        <div style={{ position: "relative", zIndex: 470 }}>{urgentBanners}</div>
 
-          <div className={f.deskGrid}>
-            {/* Left: Live Kolkata OpenStreetMap with Last Known Locations + Ping/Raid */}
-            <div className={f.mapColumn}>
-              <div className={f.mapFrame}>
-                <MapBoard
-                  g={g}
-                  now={now}
-                  role="father"
-                  selected={mapSelected}
-                  onSelect={setSelectedZone}
-                  customPins={customPins}
-                  customYarns={customYarns}
-                  pendingNote={pendingNote}
-                  onPlacePendingNote={handlePlacePin}
-                  onCancelPendingNote={() => setPendingNote(null)}
-                  yarnMode={yarnMode}
-                  yarnStartId={yarnStartId}
-                  onYarnNodeClick={handleYarnNodeClick}
-                  onExitYarnMode={() => {
-                    setYarnMode(false);
-                    setYarnStartId(null);
-                  }}
-                  onDeleteCustomPin={handleDeleteCustomPin}
-                />
+        <div className={f.deskGrid}>
+          {/* Left: Folded Live Kolkata OpenStreetMap + Ping/Raid Bar */}
+          <div className={f.mapColumn}>
+            <div className={f.mapFrame}>
+              <MapBoard
+                g={g}
+                now={now}
+                role="father"
+                selected={mapSelected}
+                onSelect={setSelectedZone}
+                customPins={customPins}
+                customYarns={customYarns}
+                pendingNote={pendingNote}
+                onPlacePendingNote={handlePlacePin}
+                onCancelPendingNote={() => setPendingNote(null)}
+                yarnMode={yarnMode}
+                yarnStartId={yarnStartId}
+                onYarnNodeClick={handleYarnNodeClick}
+                onExitYarnMode={() => {
+                  setYarnMode(false);
+                  setYarnStartId(null);
+                }}
+                onDeleteCustomPin={handleDeleteCustomPin}
+              />
+            </div>
+
+            <div className={f.deskTacticalBar}>
+              <div className={f.zoneInfo}>
+                <b>
+                  {ZONES[mapSelected].name}
+                  {selPing
+                    ? ` · ${
+                        selPing.result === "strong"
+                          ? "🔴 STRONG"
+                          : selPing.result === "weak"
+                            ? "🟠 ADJACENT"
+                            : "🔵 NO SIGNAL"
+                      }`
+                    : ""}
+                </b>
+                <small>
+                  {ZONES[mapSelected].sub}
+                  {g.clearedZones.includes(mapSelected) ? " · CCTV CLEARED" : ""} ·{" "}
+                  {g.pings.length > 0
+                    ? `Last ping: ${ZONES[g.pings[0].zone].name} (${secs(now - g.pings[0].at)} ago)`
+                    : "Click any Kolkata zone pin to Ping or Raid"}
+                </small>
               </div>
 
-              <div className={f.deskTacticalBar}>
-                <div className={f.zoneInfo}>
-                  <b>
-                    {ZONES[mapSelected].name}
-                    {selPing
-                      ? ` · ${
-                          selPing.result === "strong"
-                            ? "🔴 STRONG"
-                            : selPing.result === "weak"
-                              ? "🟠 ADJACENT"
-                              : "🔵 NO SIGNAL"
-                        }`
-                      : ""}
-                  </b>
-                  <small>
-                    {ZONES[mapSelected].sub}
-                    {g.clearedZones.includes(mapSelected) ? " · CCTV CLEARED" : ""} ·{" "}
-                    {g.pings.length > 0
-                      ? `Last ping: ${ZONES[g.pings[0].zone].name} (${secs(now - g.pings[0].at)} ago)`
-                      : "Click any Kolkata zone pin to Ping or Raid"}
-                  </small>
-                </div>
+              <div className={f.tacticalBtns}>
+                <CdButton
+                  small
+                  icon="📡"
+                  label="PING LOCKET"
+                  tone="cyan"
+                  cdLeft={pingCd}
+                  cdTotal={pingTotal}
+                  onClick={() => dispatch({ type: "ping", zone: mapSelected })}
+                />
+                <CdButton
+                  small
+                  icon="🚓"
+                  label={`RAID ${ZONES[mapSelected].name.split(" ")[0].toUpperCase()}`}
+                  tone="red"
+                  blocked={rBlock}
+                  readyText={`${g.raidsRemaining} VAN${g.raidsRemaining === 1 ? "" : "S"}`}
+                  onClick={() => dispatch({ type: "raid", zone: mapSelected })}
+                />
+                <CdButton
+                  small
+                  icon="🛡️"
+                  label={locked ? `LOCK ${secs(g.cyberLockUntil - now)}` : "CYBER LOCK"}
+                  tone="blue"
+                  cdLeft={lockCd}
+                  cdTotal={CD.cyberLock}
+                  readyText="5s FREEZE"
+                  onClick={() => dispatch({ type: "cyberLock" })}
+                />
+              </div>
+            </div>
+          </div>
 
-                <div className={f.tacticalBtns}>
-                  <CdButton
-                    small
-                    icon="📡"
-                    label="PING LOCKET"
-                    tone="cyan"
-                    cdLeft={pingCd}
-                    cdTotal={pingTotal}
-                    onClick={() => dispatch({ type: "ping", zone: mapSelected })}
-                  />
-                  <CdButton
-                    small
-                    icon="🚓"
-                    label={`RAID ${ZONES[mapSelected].name.split(" ")[0].toUpperCase()}`}
-                    tone="red"
-                    blocked={rBlock}
-                    readyText={`${g.raidsRemaining} VAN${g.raidsRemaining === 1 ? "" : "S"}`}
-                    onClick={() => dispatch({ type: "raid", zone: mapSelected })}
-                  />
-                  <CdButton
-                    small
-                    icon="🛡️"
-                    label={locked ? `LOCK ${secs(g.cyberLockUntil - now)}` : "CYBER LOCK"}
-                    tone="blue"
-                    cdLeft={lockCd}
-                    cdTotal={CD.cyberLock}
-                    readyText="5s FREEZE"
-                    onClick={() => dispatch({ type: "cyberLock" })}
-                  />
+          {/* Right: Digital Clock + Loose Pins & Yarn Ball + Spiral Notebook */}
+          <aside className={f.toolsColumn}>
+            <div className={f.clockUnit}>
+              <div className={f.clockTopRow}>
+                <span className={f.ledTimer}>{mmss(tl)}</span>
+                <div className={f.ledMeta}>
+                  <span>{fictionClock(g, now)} · FRI</span>
+                  <span>WIPE {pct}%</span>
+                </div>
+              </div>
+              <div className={s.wipeTrack}>
+                <span className={s.wipeBar} style={{ width: `${pct}%` }} />
+                <i className={s.wipeTick} style={{ left: "50%" }} />
+                <i className={s.wipeTick} style={{ left: "80%" }} />
+              </div>
+              <div className={f.ledStats}>
+                <span className={f.ledChip}>LEADS {sent}/3</span>
+                <span className={f.ledChip}>🚓 {g.raidsRemaining}</span>
+                <span className={f.ledChip}>WB-06-{g.plateNum || "----"}</span>
+              </div>
+              <div className={f.clockActions}>
+                <button
+                  type="button"
+                  className={f.tinyBtn}
+                  onClick={() => {
+                    sfx.tap();
+                    setSurface("device");
+                  }}
+                >
+                  ← Back to Laptop {deviceNeedsAttention ? "●" : ""}
+                </button>
+                <div style={{ display: "flex", gap: 5 }}>
+                  <button type="button" className={f.tinyBtn} onClick={onToggleMute}>
+                    {muted ? "🔇" : "🔊"}
+                  </button>
+                  <button type="button" className={f.tinyBtn} onClick={onLeave}>
+                    Exit
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Right: Digital Clock + Loose Pushpins & Yarn Ball + Spiral Notebook */}
-            <aside className={f.toolsColumn}>
-              <div className={f.clockUnit}>
-                <div className={f.clockTopRow}>
-                  <span className={f.ledTimer}>{mmss(tl)}</span>
-                  <div className={f.ledMeta}>
-                    <span>{fictionClock(g, now)} · FRI</span>
-                    <span>WIPE {pct}%</span>
-                  </div>
-                </div>
-                <div className={s.wipeTrack}>
-                  <span className={s.wipeBar} style={{ width: `${pct}%` }} />
-                  <i className={s.wipeTick} style={{ left: "50%" }} />
-                  <i className={s.wipeTick} style={{ left: "80%" }} />
-                </div>
-                <div className={f.ledStats}>
-                  <span className={f.ledChip}>LEADS {sent}/3</span>
-                  <span className={f.ledChip}>🚓 {g.raidsRemaining}</span>
-                  <span className={f.ledChip}>WB-06-{g.plateNum || "----"}</span>
-                </div>
-                <div className={f.clockActions}>
-                  <button
-                    type="button"
-                    className={f.tinyBtn}
-                    onClick={() => openApp(badgePingMe ? "pingme" : badgeVault ? "vault" : "notes")}
-                  >
-                    Riya&apos;s Device {deviceNeedsAttention ? "●" : "→"}
-                  </button>
-                  <div style={{ display: "flex", gap: 5 }}>
-                    {onToggleDeviceMode && (
-                      <button type="button" className={f.tinyBtn} onClick={onToggleDeviceMode}>
-                        Phone UI
-                      </button>
-                    )}
-                    <button type="button" className={f.tinyBtn} onClick={onToggleMute}>
-                      {muted ? "🔇" : "🔊"}
-                    </button>
-                    <button type="button" className={f.tinyBtn} onClick={onLeave}>
-                      Exit
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Loose pushpins & red yarn ball lying directly on wood */}
-              <div className={f.looseRow}>
+            <div className={f.looseRow}>
+              <button
+                type="button"
+                className={f.looseObj}
+                title="Pushpins — write in notebook to pin on Kolkata map"
+                onClick={() => {
+                  setYarnMode(false);
+                  setYarnStartId(null);
+                }}
+              >
+                <LoosePinsArt />
+              </button>
+              <div className={f.yarnCol}>
                 <button
                   type="button"
-                  className={f.looseObj}
-                  title="Pushpins — write in notebook to pin on Kolkata map"
+                  className={cx(f.looseObj, yarnMode && f.loosePicked)}
+                  title={yarnMode ? "Click 2 pins on Kolkata map" : "Ball of red yarn — click to tie two pins"}
                   onClick={() => {
-                    setYarnMode(false);
+                    sfx.tap();
+                    setPendingNote(null);
                     setYarnStartId(null);
+                    setYarnMode((v) => !v);
                   }}
                 >
-                  <LoosePinsArt />
+                  <LooseYarnArt />
                 </button>
-                <div className={f.yarnCol}>
+                {customYarns.length > 0 && (
                   <button
                     type="button"
-                    className={cx(f.looseObj, yarnMode && f.loosePicked)}
-                    title={yarnMode ? "Click 2 pins on Kolkata map" : "Ball of red yarn — click to tie two pins"}
-                    onClick={() => {
-                      sfx.tap();
-                      setPendingNote(null);
-                      setYarnStartId(null);
-                      setYarnMode((v) => !v);
-                    }}
+                    className={f.undoYarn}
+                    onClick={() => setCustomYarns((prev) => prev.slice(0, -1))}
                   >
-                    <LooseYarnArt />
+                    Undo ({customYarns.length})
                   </button>
-                  {customYarns.length > 0 && (
+                )}
+              </div>
+            </div>
+
+            <div className={f.notebookWrap}>
+              <div className={f.notebookRings} aria-hidden="true">
+                {Array.from({ length: 10 }, (_, i) => (
+                  <span key={i} className={f.ring} />
+                ))}
+              </div>
+              <div className={f.notebookPaper}>
+                <div className={f.nbHead}>
+                  <span>FIELD NOTEBOOK</span>
+                  {canAttach && !pendingNote && (
                     <button
                       type="button"
-                      className={f.undoYarn}
-                      onClick={() => setCustomYarns((prev) => prev.slice(0, -1))}
+                      className={f.nbClear}
+                      onClick={() => {
+                        setNoteTitle("");
+                        setNoteBody("");
+                      }}
                     >
-                      Undo ({customYarns.length})
+                      Clear
                     </button>
                   )}
                 </div>
-              </div>
-
-              {/* Spiral Field Notebook */}
-              <div className={f.notebookWrap}>
-                <div className={f.notebookRings} aria-hidden="true">
-                  {Array.from({ length: 10 }, (_, i) => (
-                    <span key={i} className={f.ring} />
-                  ))}
-                </div>
-                <div className={f.notebookPaper}>
-                  <div className={f.nbHead}>
-                    <span>FIELD NOTEBOOK</span>
-                    {canAttach && !pendingNote && (
-                      <button
-                        type="button"
-                        className={f.nbClear}
-                        onClick={() => {
-                          setNoteTitle("");
-                          setNoteBody("");
-                        }}
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    className={f.nbTitle}
-                    placeholder="Location / last seen..."
-                    value={noteTitle}
-                    onChange={(e) => setNoteTitle(e.target.value)}
-                    disabled={!!pendingNote}
-                  />
-                  <textarea
-                    className={f.nbBody}
-                    placeholder="Jot plate, PIN, or sighting, then pin to Kolkata map..."
-                    value={noteBody}
-                    onChange={(e) => setNoteBody(e.target.value)}
-                    disabled={!!pendingNote}
-                  />
-                  <div className={f.nbFoot}>
-                    <button
-                      type="button"
-                      className={f.pinNoteBtn}
-                      disabled={!canAttach && !pendingNote}
-                      onClick={handleArmNotebookPin}
-                    >
-                      {pendingNote ? "Click map · Cancel" : "Pin Note to Map"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </div>
-
-          {/* Right-edge Chevron to slide into Riya's Laptop OS */}
-          <button
-            type="button"
-            className={f.deviceChevron}
-            aria-label="Open Riya's Device"
-            onClick={() => {
-              sfx.tap();
-              if (!app) setApp("pingme");
-              setSurface("device");
-            }}
-          >
-            {deviceNeedsAttention && <span className={f.chevronPulse} />}
-            <svg viewBox="0 0 24 48" width="22" height="44" aria-hidden="true">
-              <path
-                d="M6 8 L18 24 L6 40"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className={f.chevronTip}>Riya&apos;s Device</span>
-          </button>
-
-          {popups}
-        </div>
-      );
-    }
-
-    // Laptop OS Surface (Riya's Device)
-    const activeApp = app || "pingme";
-    return (
-      <div className={cx(f.laptopOs, last10 && s.lastChance)}>
-        <header className={f.menuBar}>
-          <div className={f.menuLeft}>
-            <button
-              type="button"
-              className={f.menuBtn}
-              onClick={() => {
-                sfx.tap();
-                setSurface("map");
-              }}
-            >
-              ← Kolkata Map Desk
-            </button>
-            <strong>Riya&apos;s Device</strong>
-            <span className={f.menuMono}>WB-06-{g.plateNum || "----"}</span>
-          </div>
-          <div className={f.menuRight}>
-            <span className={cx(f.menuMono, final && s.timerRed)}>⏱️ {mmss(tl)}</span>
-            <span className={f.menuMono}>LEADS {sent}/3</span>
-            <span className={f.menuMono}>WIPE {pct}%</span>
-            <span className={f.menuMono}>🚓 {g.raidsRemaining}</span>
-            {onToggleDeviceMode && (
-              <button type="button" className={f.menuBtn} onClick={onToggleDeviceMode}>
-                Phone UI
-              </button>
-            )}
-            <button type="button" className={f.menuBtn} onClick={onToggleMute}>
-              {muted ? "🔇" : "🔊"}
-            </button>
-            <button type="button" className={f.menuBtn} onClick={onLeave}>
-              Exit
-            </button>
-          </div>
-        </header>
-
-        {urgentBanners}
-
-        <main className={f.osStage}>
-          <section className={f.osWindow}>
-            <div className={f.winBar}>
-              <div className={f.lights}>
-                <button
-                  type="button"
-                  className={f.lightRed}
-                  aria-label="Back to desk"
-                  onClick={() => setSurface("map")}
+                <input
+                  className={f.nbTitle}
+                  placeholder="Location / last seen..."
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                  disabled={!!pendingNote}
                 />
-                <span className={f.lightAmber} />
-                <span className={f.lightGreen} />
+                <textarea
+                  className={f.nbBody}
+                  placeholder="Jot plate, PIN, or sighting, then pin to Kolkata map..."
+                  value={noteBody}
+                  onChange={(e) => setNoteBody(e.target.value)}
+                  disabled={!!pendingNote}
+                />
+                <div className={f.nbFoot}>
+                  <button
+                    type="button"
+                    className={f.pinNoteBtn}
+                    disabled={!canAttach && !pendingNote}
+                    onClick={handleArmNotebookPin}
+                  >
+                    {pendingNote ? "Click map · Cancel" : "Pin Note to Map"}
+                  </button>
+                </div>
               </div>
-              <span className={f.winTitle}>{GAME_APP_META[activeApp]?.label}</span>
-              <span className={f.winMeta}>{fictionClock(g, now)}</span>
             </div>
-            <div className={f.winContent}>{renderAppContent(activeApp)}</div>
-          </section>
-        </main>
+          </aside>
+        </div>
 
-        <footer className={f.dockWrap}>
-          <nav className={f.dock} aria-label="Device Dock">
-            {[
-              ["pingme", badgePingMe ? "!" : null],
-              ["notes", badgeNotes ? "1" : null],
-              ["vault", badgeVault ? "1" : null],
-              ["map", badgeMap ? "●" : null],
-            ].map(([id, badge]) => (
-              <button
-                key={id}
-                type="button"
-                className={f.dockItem}
-                onClick={() => openApp(id)}
-                aria-label={GAME_APP_META[id].label}
-              >
-                <span className={f.dockTip}>{GAME_APP_META[id].label}</span>
-                <GameAppIcon id={id} size={44} />
-                {badge && <span className={f.dockBadge}>{badge}</span>}
-                {activeApp === id && <span className={f.dockActiveDot} />}
-              </button>
-            ))}
-          </nav>
-
-          <div style={{ width: 210 }}>
-            <CdButton
-              small
-              icon="🛡️"
-              label={locked ? `CYBER LOCK (${secs(g.cyberLockUntil - now)})` : "CYBER LOCK"}
-              tone="blue"
-              cdLeft={lockCd}
-              cdTotal={CD.cyberLock}
-              readyText="5s FREEZE"
-              onClick={() => dispatch({ type: "cyberLock" })}
+        {/* Right-edge Chevron back to Laptop UI */}
+        <button
+          type="button"
+          className={f.deviceChevron}
+          aria-label="Back to Laptop UI"
+          onClick={() => {
+            sfx.tap();
+            setSurface("device");
+          }}
+        >
+          {deviceNeedsAttention && <span className={f.chevronPulse} />}
+          <svg viewBox="0 0 24 48" width="22" height="44" aria-hidden="true">
+            <path
+              d="M6 8 L18 24 L6 40"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </div>
-        </footer>
+          </svg>
+          <span className={f.chevronTip}>Back to Laptop</span>
+        </button>
 
         {popups}
       </div>
@@ -1024,152 +673,418 @@ export default function FatherView({
   }
 
   /* ═══════════════════════════════════════════════════════════
-     PHONE MODE — Proper Smartphone OS + Kolkata Map on Home
+     PRIMARY SCREEN — Laptop OS (Everything Comes as Messages)
      ═══════════════════════════════════════════════════════════ */
   return (
-    <div className={cx(s.screen, s.fatherShell, final && s.finalStretch, last10 && s.lastChance)}>
-      <div className={s.statusBar}>
-        <span>{fictionClock(g, now)}</span>
-        <span className={s.statusRight}>
-          <button
-            type="button"
-            className={s.fakeSignalBtn}
-            onClick={() =>
-              localToast(
-                "The reset command is already on the device. Going offline won't stop it, but it WILL cut LocketLink & Dispatch!",
-                "bad"
-              )
-            }
-          >
-            📶 5G · ✈️
+    <div className={cx(f.laptopOs, last10 && s.lastChance)}>
+      <header className={f.menuBar}>
+        <div className={f.menuLeft}>
+          <strong>Riya&apos;s Laptop · Inspector Subir Sen</strong>
+          <span className={f.menuMono}>WB-06-{g.plateNum || "----"}</span>
+        </div>
+        <div className={f.menuRight}>
+          <span className={cx(f.menuMono, final && s.timerRed)}>⏱️ {mmss(tl)}</span>
+          <span className={f.menuMono}>LEADS {sent}/3</span>
+          <span className={f.menuMono}>WIPE {pct}%</span>
+          <span className={f.menuMono}>🚓 {g.raidsRemaining}</span>
+          <button type="button" className={f.menuBtn} onClick={() => openDockApp("map")}>
+            🗺️ CholoMap {badgeMap ? "●" : ""}
           </button>
-          {onToggleDeviceMode && (
-            <button type="button" className={s.fakeSignalBtn} onClick={onToggleDeviceMode}>
-              💻 Desk
-            </button>
-          )}
-          <button type="button" className={s.iconMini} onClick={onToggleMute} aria-label="Toggle sound">
+          <button type="button" className={f.menuBtn} onClick={onToggleMute}>
             {muted ? "🔇" : "🔊"}
           </button>
-        </span>
-      </div>
-
-      <div className={s.hud}>
-        <div className={s.hudRow}>
-          <span className={cx(s.timer, final && s.timerRed)}>⏱️ {mmss(tl)}</span>
-          <span className={s.hudChip}>LEADS {sent}/3</span>
-          <span className={s.hudChip}>WIPE {pct}%</span>
-          <span className={s.hudChip}>🚓 {g.raidsRemaining}</span>
+          <button type="button" className={f.menuBtn} onClick={onLeave}>
+            Exit
+          </button>
         </div>
+      </header>
+
+      <div style={{ padding: "0 14px 4px", background: "rgba(10,14,22,0.86)" }}>
         <div className={s.wipeTrack}>
           <span className={s.wipeBar} style={{ width: `${pct}%` }} />
           <i className={s.wipeTick} style={{ left: "50%" }} />
           <i className={s.wipeTick} style={{ left: "80%" }} />
         </div>
-        <div className={s.hudSub}>
-          <span className={s.suvPill}>🚙 White SUV · WB-06-{g.plateNum || "----"}</span>
-          <span className={s.onlineTag}>📡 LOCKETLINK + DISPATCH</span>
-        </div>
       </div>
 
       {urgentBanners}
 
-      <div className={s.body}>
+      <main className={f.osStage}>
         {app === null ? (
-          <div className={f.phoneHome}>
-            {/* Live Kolkata Map widget right on the phone Home Screen showing Last Known Locations */}
-            <div className={f.phoneMapCard}>
-              <MapBoard
-                g={g}
-                now={now}
-                role="father"
-                selected={mapSelected}
-                onSelect={(id) => {
-                  setSelectedZone(id);
-                  openApp("map");
-                }}
-                compact
-                customPins={customPins}
-                customYarns={customYarns}
-              />
-              <button type="button" className={f.phoneMapFooter} onClick={() => openApp("map")}>
-                <span>
-                  {g.pings.length > 0
-                    ? `Last signal: ${ZONES[g.pings[0].zone].name}`
-                    : "Kolkata · Last Known Locations"}
-                </span>
-                <b>OPEN MAP →</b>
-              </button>
-            </div>
-
-            <div className={f.phoneGuide}>
-              {sent === 0
-                ? "Step 1: Open PingMe and hold leads to send to Lalbazar."
-                : g.leads.lead3.status === "active"
-                  ? "Step 2: Check QuickNotes for the BangoVault PIN, or raid on CholoMap."
-                  : "Final Step: Track the locket on Kolkata CholoMap and dispatch a PCR Raid!"}
-            </div>
-
-            <div className={f.phoneAppGrid}>
+          <div className={f.desktopEmpty}>
+            <div className={f.desktopIconGrid}>
               {[
                 ["pingme", badgePingMe ? "!" : null],
                 ["notes", badgeNotes ? "1" : null],
                 ["vault", badgeVault ? "1" : null],
                 ["map", badgeMap ? "●" : null],
               ].map(([id, badge]) => (
-                <button key={id} type="button" className={f.phoneAppTile} onClick={() => openApp(id)}>
-                  {badge && <span className={f.phoneTileBadge}>{badge}</span>}
-                  <GameAppIcon id={id} size={52} />
+                <button
+                  key={id}
+                  type="button"
+                  className={f.desktopShortcut}
+                  onClick={() => openDockApp(id)}
+                >
+                  <GameAppIcon id={id} size={48} />
+                  {badge && <span className={f.dockBadge}>{badge}</span>}
                   <span>{GAME_APP_META[id].label}</span>
                 </button>
               ))}
             </div>
-
-            <button type="button" className={s.subtleExit} onClick={onLeave}>
-              Exit match
-            </button>
           </div>
         ) : (
-          <div className={s.appView}>
-            <div className={s.appHead}>
-              <button type="button" className={s.backBtn} onClick={() => setApp(null)}>
-                ◀ Home
-              </button>
-              <strong>{GAME_APP_META[app]?.label}</strong>
-              <span className={s.appHeadMeta}>
-                {app === "pingme" && (g.pingmePurged ? "PURGED" : "Purges 50%")}
-                {app === "notes" && (g.notesPurged ? "PURGED" : "Purges 80%")}
-                {app === "vault" && (g.leads.lead3.status === "saved" ? "UPLOADED" : g.vaultUnlocked ? "UNLOCKED" : "LOCKED")}
-                {app === "map" && `${ZONE_IDS.length - g.clearedZones.length} zones`}
-              </span>
+          <section className={f.osWindow}>
+            <div className={f.winBar}>
+              <div className={f.lights}>
+                <button
+                  type="button"
+                  className={f.lightRed}
+                  aria-label="Close app"
+                  title="Close app"
+                  onClick={() => {
+                    sfx.tap();
+                    setApp(null);
+                  }}
+                />
+                <span className={f.lightAmber} />
+                <span className={f.lightGreen} />
+              </div>
+              <span className={f.winTitle}>{GAME_APP_META[app]?.label}</span>
+              <div className={f.winMeta}>
+                <span>{fictionClock(g, now)}</span>
+                <button
+                  type="button"
+                  className={f.winCloseBtn}
+                  onClick={() => {
+                    sfx.tap();
+                    setApp(null);
+                  }}
+                >
+                  ✕ Close
+                </button>
+              </div>
             </div>
-            {renderAppContent(app)}
-          </div>
-        )}
-      </div>
 
-      <div className={s.bottomDock}>
-        <button
-          type="button"
-          className={cx(s.dockHome, app === null && s.dockHomeActive)}
-          onClick={() => {
-            sfx.tap();
-            setApp(null);
-          }}
-        >
-          ⌂ HOME
-        </button>
-        <CdButton
-          small
-          icon="🛡️"
-          label={locked ? `CYBER LOCK (${secs(g.cyberLockUntil - now)})` : "CYBER LOCK (5s FREEZE)"}
-          tone="blue"
-          cdLeft={lockCd}
-          cdTotal={CD.cyberLock}
-          readyText="LOCK + RAID"
-          onClick={() => dispatch({ type: "cyberLock" })}
-        />
-      </div>
+            <div className={f.winContent}>
+              {/* PINGME — Messages (starts with Rohan only, unfolds one by one, Forward to Lalbazar) */}
+              {app === "pingme" && (
+                <>
+                  <div className={s.chatTabs}>
+                    {!g.pingmePurged &&
+                      availableChatIds.map((id) => {
+                        const c = CHATS[id];
+                        const L = c.lead ? g.leads[c.lead] : null;
+                        const hot = L && leadOpen(L);
+                        const ow = L?.status === "overwriting";
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            className={cx(s.chatTab, chatId === id && s.chatTabOn, ow && s.chatTabOw)}
+                            onClick={() => {
+                              sfx.tap();
+                              setChatId(id);
+                            }}
+                          >
+                            {c.name.split(" ")[0]}
+                            {hot && <i className={s.tabDot} />}
+                          </button>
+                        );
+                      })}
+                    <button
+                      type="button"
+                      className={cx(s.chatTab, chatId === "dispatch" && s.chatTabOn)}
+                      onClick={() => {
+                        sfx.tap();
+                        setChatId("dispatch");
+                      }}
+                    >
+                      Lalbazar ({forwardedLogs.length + dispatchMessages.length})
+                    </button>
+                  </div>
+
+                  {chatId === "dispatch" ? (
+                    <div className={s.chatBody}>
+                      <div className={s.chatInfo}>
+                        <b>Lalbazar Dispatch</b>
+                        <span>Forwarded evidence &amp; live alerts</span>
+                      </div>
+                      <div className={s.msgList}>
+                        <div className={cx(s.bubble, s.bubbleThem)}>
+                          <p>
+                            🚨 Remote wipe detected on Riya&apos;s device (03:00 delay). Forward suspicious chats here
+                            so we can clear Kolkata zones on <b>CholoMap</b>.
+                          </p>
+                          <span className={s.bubbleTime}>8:15 PM</span>
+                        </div>
+                        {forwardedLogs.map((fwd) => (
+                          <div key={fwd.id} className={cx(s.bubble, s.bubbleMe)}>
+                            <div className={f.forwardedQuote}>↪ Forwarded from {fwd.from}</div>
+                            <p>{fwd.text}</p>
+                            <span className={s.bubbleTime}>{fwd.time} · Sent to Lalbazar</span>
+                          </div>
+                        ))}
+                        {dispatchMessages.map((ev) => (
+                          <div key={ev.id} className={cx(s.bubble, s.bubbleThem)}>
+                            <p>{ev.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : g.pingmePurged ? (
+                    <div className={s.purgedBox}>
+                      <div>🚫</div>
+                      <h3>PINGME PURGED (50% WIPE)</h3>
+                      <p>Chat history was erased by the remote wipe.</p>
+                      <p>
+                        GateBot&apos;s vehicle plate <b>WB-06-{g.plateNum || "----"}</b> is still pinned in your bar, and
+                        QuickNotes &amp; Lalbazar Dispatch remain available.
+                      </p>
+                    </div>
+                  ) : (
+                    (() => {
+                      const activeChatKey = availableChatIds.includes(chatId) ? chatId : "rohan";
+                      const chat = CHATS[activeChatKey];
+                      const visibleMsgs = chat.messages.slice(
+                        0,
+                        Math.max(1, visibleCountByChat[activeChatKey] || 1)
+                      );
+                      const stillTyping = visibleMsgs.length < chat.messages.length;
+
+                      return (
+                        <div className={s.chatBody}>
+                          <div className={s.chatInfo}>
+                            <b>{chat.name}</b>
+                            <span>{chat.number ? `${chat.number} · ${chat.seen}` : chat.seen}</span>
+                          </div>
+                          <div className={s.msgList}>
+                            {visibleMsgs.map((m, i) => {
+                              const text = m.text.replace("{PLATE}", g.plateNum || "----");
+                              const L = m.lead ? g.leads[m.lead] : null;
+                              const isDeleted = L?.status === "deleted";
+                              const isSaved = L?.status === "saved";
+                              const isOw = L?.status === "overwriting";
+                              return (
+                                <div
+                                  key={i}
+                                  className={cx(
+                                    s.bubble,
+                                    m.from === "me" ? s.bubbleMe : s.bubbleThem,
+                                    m.lead && !isDeleted && !isSaved && s.bubbleLead,
+                                    isOw && s.bubbleOw,
+                                    isSaved && s.bubbleSaved,
+                                    isDeleted && s.bubbleDeleted
+                                  )}
+                                >
+                                  {isDeleted ? (
+                                    <div className={s.deletedMsg}>🚫 Restored from older backup (wiped remotely)</div>
+                                  ) : (
+                                    <>
+                                      <p>{text}</p>
+                                      <span className={s.bubbleTime}>{m.time}</span>
+                                    </>
+                                  )}
+                                  {m.lead && isOw && (
+                                    <div className={s.owWarn}>
+                                      ⚠️ OVERWRITING IN {secs(L.overwriteEndsAt - now)} — FORWARD NOW!
+                                    </div>
+                                  )}
+                                  {m.lead && leadOpen(L) && (
+                                    <button
+                                      type="button"
+                                      className={cx(f.forwardBtn, isOw && f.forwardBtnUrgent)}
+                                      onClick={() => handleForwardLead(m.lead, text)}
+                                    >
+                                      <span>↪ Forward to Lalbazar</span>
+                                      <small>{LEADS[m.lead].via} · clears 2 zones</small>
+                                    </button>
+                                  )}
+                                  {m.lead && isSaved && (
+                                    <div className={s.savedTag}>✅ FORWARDED TO LALBAZAR — 2 zones cleared</div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            {stillTyping && (
+                              <div className={cx(s.bubble, s.bubbleThem)}>
+                                <p>…</p>
+                              </div>
+                            )}
+
+                            {/* Guided nudge to next incoming chat once current lead is forwarded */}
+                            {activeChatKey === "rohan" && ananyaUnlocked && (
+                              <div className={f.nextChatHint}>
+                                <span>📩 New chat recovered: <b>Ananya (Dept)</b></span>
+                                <button
+                                  type="button"
+                                  className={f.nextChatBtn}
+                                  onClick={() => {
+                                    sfx.tap();
+                                    setChatId("ananya");
+                                  }}
+                                >
+                                  Open Chat →
+                                </button>
+                              </div>
+                            )}
+                            {activeChatKey === "ananya" && gatebotUnlocked && (
+                              <div className={f.nextChatHint}>
+                                <span>📩 New alert recovered: <b>Salt Lake GateBot</b></span>
+                                <button
+                                  type="button"
+                                  className={f.nextChatBtn}
+                                  onClick={() => {
+                                    sfx.tap();
+                                    setChatId("gatebot");
+                                  }}
+                                >
+                                  Open Alert →
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
+                </>
+              )}
+
+              {/* QUICKNOTES */}
+              {app === "notes" &&
+                (g.notesPurged ? (
+                  <div className={s.purgedBox}>
+                    <div>🚫</div>
+                    <h3>QUICKNOTES PURGED (80% WIPE)</h3>
+                    <p>All notes have been wiped. Hope you remembered the BangoVault PIN!</p>
+                  </div>
+                ) : (
+                  <div className={s.notesList}>
+                    <div className={s.noteCard}>
+                      <div className={s.noteTitle}>Tonight</div>
+                      <p>Remind Baba about BP meds. Warm up dal before 9 PM.</p>
+                    </div>
+                    <div className={cx(s.noteCard, s.notePinCard, now < g.notesCorruptUntil && s.noteCorrupt)}>
+                      <div className={s.noteTitle}>BangoVault Backup PIN</div>
+                      {now < g.notesCorruptUntil ? (
+                        <>
+                          <div className={s.pinBigGlitch}>#@!%</div>
+                          <p className={s.corruptSub}>
+                            Sync corrupted by remote device · auto-restores in {secs(g.notesCorruptUntil - now)}
+                          </p>
+                          <HoldButton
+                            key={`restore-${g.notesCorruptUntil}`}
+                            ms={HOLD_MS.restore}
+                            paused={paused}
+                            tone="cyan"
+                            label="HOLD 1s: RESTORE NOTE"
+                            onDone={() => dispatch({ type: "restoreNote" })}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <div className={s.pinBig}>{g.vaultPin || "----"}</div>
+                          <p className={s.pinSub}>Temporary Dept Passcode — enter in BangoVault</p>
+                        </>
+                      )}
+                    </div>
+                    <div className={s.noteCard}>
+                      <div className={s.noteTitle}>Weird (Last Week)</div>
+                      <p>
+                        Linked my cloud backup to R&apos;s phone (<b>…44102</b>) &ldquo;for safety&rdquo;?? Should
+                        unlink it soon.
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+              {/* BANGOVAULT */}
+              {app === "vault" &&
+                (!g.vaultUnlocked && g.leads.lead3.status !== "saved" ? (
+                  <VaultKeypad
+                    key={g.vaultRelockUsed ? "relocked" : "fresh"}
+                    onSubmit={(pin) => dispatch({ type: "enterPin", pin })}
+                  />
+                ) : (
+                  <div className={s.dossier}>
+                    <div className={s.dossierStamp}>GOVT OF WEST BENGAL — CONFIDENTIAL AUDIT</div>
+                    <dl className={s.dossierGrid}>
+                      <dt>Project</dt>
+                      <dd>SECTOR V URBAN CORRIDOR // TENDER #404</dd>
+                      <dt>Flagged Shell Firm</dt>
+                      <dd>East-Bypass Infra Holdings</dd>
+                      <dt>Encrypted Contractor ID</dt>
+                      <dd className={s.contractorId}>{CONTRACTOR_ID}</dd>
+                      <dt>Liaison Desk</dt>
+                      <dd>Urban Dev. Dept, 4th Floor</dd>
+                    </dl>
+                    {g.leads.lead3.status === "active" ? (
+                      <button
+                        type="button"
+                        className={f.forwardBtn}
+                        onClick={() =>
+                          handleForwardLead(
+                            "lead3",
+                            `Tender #404 Audit — Contractor ID ${CONTRACTOR_ID} (East-Bypass Infra Holdings)`
+                          )
+                        }
+                      >
+                        <span>↪ Forward Audit to Lalbazar Cyber Cell</span>
+                        <small>Triggers 4s exact SUV trace</small>
+                      </button>
+                    ) : (
+                      <div className={s.uploadedBox}>
+                        <div className={s.savedTag}>✅ FORWARDED TO LALBAZAR CYBER CELL</div>
+                        <button type="button" className={s.jumpMapBtn} onClick={() => openDockApp("map")}>
+                          OPEN CHOLOMAP WORKSPACE →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className={f.dockWrap}>
+        <nav className={f.dock} aria-label="Laptop Dock">
+          {[
+            ["pingme", badgePingMe ? "!" : null],
+            ["notes", badgeNotes ? "1" : null],
+            ["vault", badgeVault ? "1" : null],
+            ["map", badgeMap ? "●" : null],
+          ].map(([id, badge]) => (
+            <button
+              key={id}
+              type="button"
+              className={f.dockItem}
+              onClick={() => openDockApp(id)}
+              aria-label={GAME_APP_META[id].label}
+            >
+              <span className={f.dockTip}>
+                {id === "map" ? "CholoMap (Kolkata Workspace)" : GAME_APP_META[id].label}
+              </span>
+              <GameAppIcon id={id} size={46} />
+              {badge && <span className={f.dockBadge}>{badge}</span>}
+              {app === id && <span className={f.dockActiveDot} />}
+            </button>
+          ))}
+        </nav>
+
+        <div style={{ width: 210 }}>
+          <CdButton
+            small
+            icon="🛡️"
+            label={locked ? `CYBER LOCK (${secs(g.cyberLockUntil - now)})` : "CYBER LOCK"}
+            tone="blue"
+            cdLeft={lockCd}
+            cdTotal={CD.cyberLock}
+            readyText="5s FREEZE"
+            onClick={() => dispatch({ type: "cyberLock" })}
+          />
+        </div>
+      </footer>
 
       {popups}
     </div>

@@ -28,11 +28,7 @@ export default function RohanView({
   muted,
   onToggleMute,
   onLeave,
-  deviceMode = "phone",
-  onToggleDeviceMode,
 }) {
-  const isLaptop = deviceMode === "laptop";
-  const [tab, setTab] = useState("route"); // route | attack (phone only)
   const [mapMode, setMapMode] = useState("reroute"); // reroute | spoof
 
   const tl = timeLeftMs(g, now);
@@ -95,30 +91,14 @@ export default function RohanView({
         </div>
       )}
       {g.raidInFlight && (
-        <button
-          type="button"
-          className={cx(s.urgentBar, s.urgentRed)}
-          onClick={() => !isLaptop && setTab("route")}
-        >
+        <div className={cx(s.urgentBar, s.urgentRed)}>
           <span>🚨 SIRENS CONVERGING ({secs(g.raidInFlight.arrivesAt - now)}) — STAY OR MOVE?</span>
-          {!isLaptop && tab !== "route" && <b>MAP →</b>}
-        </button>
+        </div>
       )}
       {trace && (
-        <button
-          type="button"
-          className={cx(s.urgentBar, s.urgentRed)}
-          onClick={() => !isLaptop && setTab("route")}
-        >
+        <div className={cx(s.urgentBar, s.urgentRed)}>
           <span>🎯 FULL TRACE ON YOU ({secs(g.traceUntil - now)}) — REROUTE NOW!</span>
-          {!isLaptop && tab !== "route" && <b>MAP →</b>}
-        </button>
-      )}
-      {vaultAlert && !isLaptop && tab !== "attack" && (
-        <button type="button" className={cx(s.urgentBar, s.urgentAmber)} onClick={() => setTab("attack")}>
-          <span>🔓 INSPECTOR UNLOCKED BANGOVAULT!</span>
-          <b>RE-LOCK →</b>
-        </button>
+        </div>
       )}
     </>
   );
@@ -355,108 +335,30 @@ export default function RohanView({
   );
 
   /* ═══════════════════════════════════════════════════════════
-     DESKTOP / LAPTOP MODE — Split Back-Seat Laptop OS
-     ═══════════════════════════════════════════════════════════ */
-  if (isLaptop) {
-    return (
-      <div className={cx(r.laptop, last10 && s.lastChance)}>
-        <header className={r.topBar}>
-          <div className={r.topLeft}>
-            <span className={r.greenTag}>● ROHAN · BACK SEAT LAPTOP</span>
-            <span className={cx(r.topChip, final && s.timerRed)}>⏱️ {mmss(tl)}</span>
-            <span className={r.topChip}>WIPE {pct}%</span>
-            <span className={r.topChip}>LEADS {sent}/3</span>
-            <span className={r.topChip}>🚓 {g.raidsRemaining}</span>
-          </div>
-          <div className={r.topRight}>
-            <span>{fictionClock(g, now)}</span>
-            {onToggleDeviceMode && (
-              <button type="button" className={r.topBtn} onClick={onToggleDeviceMode}>
-                Phone UI
-              </button>
-            )}
-            <button type="button" className={r.topBtn} onClick={onToggleMute}>
-              {muted ? "🔇" : "🔊"}
-            </button>
-            <button type="button" className={r.topBtn} onClick={onLeave}>
-              Exit
-            </button>
-          </div>
-        </header>
-
-        <div className={r.wipeStrip}>
-          <div className={s.wipeTrack}>
-            <span className={cx(s.wipeBar, s.wipeBarGreen)} style={{ width: `${pct}%` }} />
-            <i className={s.wipeTick} style={{ left: "50%" }} />
-            <i className={s.wipeTick} style={{ left: "80%" }} />
-          </div>
-        </div>
-
-        {urgentBanners}
-
-        <main className={r.splitGrid}>
-          <section className={r.window}>
-            <div className={r.winBar}>
-              <span className={r.dots}>
-                <i style={{ background: "#ef4444" }} />
-                <i style={{ background: "#f59e0b" }} />
-                <i style={{ background: "#22c55e" }} />
-              </span>
-              <span>GETAWAY SUV · KOLKATA MAP</span>
-              <span>{g.suvZone ? ZONES[g.suvZone]?.name : "Standby"}</span>
-            </div>
-            <div className={r.mapBody}>{routeSection}</div>
-          </section>
-
-          <section className={r.window}>
-            <div className={r.winBar}>
-              <span className={r.dots}>
-                <i style={{ background: "#ef4444" }} />
-                <i style={{ background: "#f59e0b" }} />
-                <i style={{ background: "#22c55e" }} />
-              </span>
-              <span>REMOTE WIPE CONSOLE</span>
-              <span>{vaultAlert ? "VAULT OPEN!" : "LIVE"}</span>
-            </div>
-            <div className={r.attackScroll}>{attackSection}</div>
-          </section>
-        </main>
-
-        {cyberOverlay}
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════════════
-     PHONE MODE — Mobile Back-Seat Console with Kolkata OSM
+     BACK-SEAT LAPTOP OS — Split Kolkata Map + Remote Wipe Console
      ═══════════════════════════════════════════════════════════ */
   return (
-    <div className={cx(s.screen, s.rohanShell, final && s.finalStretch, last10 && s.lastChance)}>
-      <div className={s.rohanTop}>
-        <span>● ROHAN · BACK SEAT SUV</span>
-        <span className={s.statusRight}>
+    <div className={cx(r.laptop, last10 && s.lastChance)}>
+      <header className={r.topBar}>
+        <div className={r.topLeft}>
+          <span className={r.greenTag}>● ROHAN · BACK SEAT LAPTOP</span>
+          <span className={cx(r.topChip, final && s.timerRed)}>⏱️ {mmss(tl)}</span>
+          <span className={r.topChip}>WIPE {pct}%</span>
+          <span className={r.topChip}>LEADS {sent}/3</span>
+          <span className={r.topChip}>🚓 {g.raidsRemaining}</span>
+        </div>
+        <div className={r.topRight}>
           <span>{fictionClock(g, now)}</span>
-          {onToggleDeviceMode && (
-            <button type="button" className={s.fakeSignalBtn} onClick={onToggleDeviceMode}>
-              💻 Laptop
-            </button>
-          )}
-          <button type="button" className={s.iconMini} onClick={onToggleMute} aria-label="Toggle sound">
+          <button type="button" className={r.topBtn} onClick={onToggleMute}>
             {muted ? "🔇" : "🔊"}
           </button>
-          <button type="button" className={s.iconMini} onClick={onLeave} aria-label="Exit match">
-            ✕
+          <button type="button" className={r.topBtn} onClick={onLeave}>
+            Exit
           </button>
-        </span>
-      </div>
-
-      <div className={cx(s.hud, s.hudDark)}>
-        <div className={s.hudRow}>
-          <span className={cx(s.timer, final && s.timerRed)}>⏱️ {mmss(tl)}</span>
-          <span className={s.hudChip}>WIPE {pct}%</span>
-          <span className={s.hudChip}>LEADS {sent}/3</span>
-          <span className={s.hudChip}>🚓 {g.raidsRemaining}</span>
         </div>
+      </header>
+
+      <div className={r.wipeStrip}>
         <div className={s.wipeTrack}>
           <span className={cx(s.wipeBar, s.wipeBarGreen)} style={{ width: `${pct}%` }} />
           <i className={s.wipeTick} style={{ left: "50%" }} />
@@ -466,34 +368,33 @@ export default function RohanView({
 
       {urgentBanners}
 
-      <div className={s.body}>
-        {tab === "route" ? <div className={s.rohanPanel}>{routeSection}</div> : attackSection}
-      </div>
+      <main className={r.splitGrid}>
+        <section className={r.window}>
+          <div className={r.winBar}>
+            <span className={r.dots}>
+              <i style={{ background: "#ef4444" }} />
+              <i style={{ background: "#f59e0b" }} />
+              <i style={{ background: "#22c55e" }} />
+            </span>
+            <span>GETAWAY SUV · KOLKATA MAP</span>
+            <span>{g.suvZone ? ZONES[g.suvZone]?.name : "Standby"}</span>
+          </div>
+          <div className={r.mapBody}>{routeSection}</div>
+        </section>
 
-      <div className={s.rohanTabs}>
-        <button
-          type="button"
-          className={cx(s.rTab, tab === "route" && s.rTabOn)}
-          onClick={() => {
-            sfx.tap();
-            setTab("route");
-          }}
-        >
-          {(g.raidInFlight || trace) && <i className={s.tabDot} />}
-          🗺️ GETAWAY SUV
-        </button>
-        <button
-          type="button"
-          className={cx(s.rTab, tab === "attack" && s.rTabOn)}
-          onClick={() => {
-            sfx.tap();
-            setTab("attack");
-          }}
-        >
-          {vaultAlert && <i className={s.tabDot} />}
-          ☁️ REMOTE ATTACK
-        </button>
-      </div>
+        <section className={r.window}>
+          <div className={r.winBar}>
+            <span className={r.dots}>
+              <i style={{ background: "#ef4444" }} />
+              <i style={{ background: "#f59e0b" }} />
+              <i style={{ background: "#22c55e" }} />
+            </span>
+            <span>REMOTE WIPE CONSOLE</span>
+            <span>{vaultAlert ? "VAULT OPEN!" : "LIVE"}</span>
+          </div>
+          <div className={r.attackScroll}>{attackSection}</div>
+        </section>
+      </main>
 
       {cyberOverlay}
     </div>

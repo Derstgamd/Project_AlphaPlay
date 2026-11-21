@@ -1750,23 +1750,32 @@
 }
 
 .toasts {
-  position: absolute;
-  top: 44px;
-  left: 10px;
-  right: 10px;
-  z-index: 30;
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  width: min(340px, calc(100vw - 32px));
+  z-index: 610;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: column-reverse;
+  gap: 7px;
   pointer-events: none;
 }
+.phoneFrame .toasts {
+  position: absolute;
+  bottom: 64px;
+  left: 10px;
+  right: 10px;
+  width: auto;
+}
 .toast {
-  padding: 9px 12px;
-  border-radius: 12px;
-  font-size: 12.5px;
-  font-weight: 700;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 10px 13px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-left-width: 3px;
+  backdrop-filter: blur(14px);
 }
 .toast_info {
   background: rgba(15, 23, 42, 0.94);

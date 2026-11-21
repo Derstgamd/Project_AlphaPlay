@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useHostDevice } from "@/hooks/useHostDevice";
 import { LAST_CHANCE_MS } from "../constants";
 import { WipeoutController } from "../controller";
 import { timeLeftMs } from "../engine";
@@ -12,17 +11,12 @@ import { JoiningScreen, LandingScreen, PairingScreen } from "./LobbyScreens";
 import { EndingNotification, LockNotification } from "./LockAndEndScreens";
 import RohanView from "./RohanView";
 import c from "./ClipboardLobby.module.css";
-import s from "./wipeout.module.css";
 
 export default function WipeoutApp() {
   const [ctl] = useState(() => new WipeoutController());
   const snap = useSyncExternalStore(ctl.subscribe, ctl.getSnapshot, ctl.getSnapshot);
   const now = useNow(ctl, 100);
   const [muted, setMutedState] = useState(() => isMuted());
-  const hostDevice = useHostDevice();
-  const deviceMode = hostDevice.activeDeviceType;
-  const toggleDeviceMode = () =>
-    hostDevice.setOverrideType(deviceMode === "laptop" ? "phone" : "laptop");
 
   const g = snap.game;
   const role = g && snap.side ? g.roles[snap.side] : null;
@@ -92,7 +86,7 @@ export default function WipeoutApp() {
   else if (snap.screen === "pairing") view = <PairingScreen ctl={ctl} snap={snap} />;
   else if (snap.screen === "joining") view = <JoiningScreen ctl={ctl} snap={snap} />;
   else if (g && role) {
-    // Keep the Kolkata board / Laptop / Phone UI mounted across lock, countdown, playing, and over
+    // Always stay in the Laptop UI across lock, countdown, playing, and over
     if (role === "father") {
       view = (
         <FatherView
@@ -103,8 +97,6 @@ export default function WipeoutApp() {
           muted={muted}
           onToggleMute={toggleMute}
           onLeave={ctl.leave}
-          deviceMode={deviceMode}
-          onToggleDeviceMode={toggleDeviceMode}
         />
       );
     } else {
@@ -117,8 +109,6 @@ export default function WipeoutApp() {
           muted={muted}
           onToggleMute={toggleMute}
           onLeave={ctl.leave}
-          deviceMode={deviceMode}
-          onToggleDeviceMode={toggleDeviceMode}
         />
       );
     }
@@ -133,7 +123,6 @@ export default function WipeoutApp() {
     );
   }
 
-  const isDesktopMatch = deviceMode === "laptop" && g && role;
   const phaseNotification =
     g && role ? (
       g.status === "lock" || g.status === "countdown" ? (
@@ -143,7 +132,7 @@ export default function WipeoutApp() {
           now={now}
           dispatch={ctl.dispatch}
           onLeave={ctl.leave}
-          inPhone={!isDesktopMatch}
+          inPhone={false}
         />
       ) : g.status === "over" ? (
         <EndingNotification
@@ -152,30 +141,17 @@ export default function WipeoutApp() {
           now={now}
           dispatch={ctl.dispatch}
           onLeave={ctl.leave}
-          inPhone={!isDesktopMatch}
+          inPhone={false}
         />
       ) : null
     ) : null;
 
-  if (isDesktopMatch) {
-    return (
-      <main style={{ position: "relative", width: "100%", height: "100dvh", overflow: "hidden" }}>
-        <PeerAway link={snap.link} mode={snap.mode} />
-        <Toasts toasts={toasts} />
-        {phaseNotification}
-        {view}
-      </main>
-    );
-  }
-
   return (
-    <main className={s.stage}>
-      <div className={s.phoneFrame}>
-        <PeerAway link={snap.link} mode={snap.mode} />
-        <Toasts toasts={toasts} />
-        {phaseNotification}
-        {view}
-      </div>
+    <main style={{ position: "relative", width: "100%", height: "100dvh", overflow: "hidden" }}>
+      <PeerAway link={snap.link} mode={snap.mode} />
+      <Toasts toasts={toasts} />
+      {phaseNotification}
+      {view}
     </main>
   );
 }
