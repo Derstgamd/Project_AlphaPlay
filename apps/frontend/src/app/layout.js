@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Outfit } from "next/font/google";
+import { Caveat, Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,9 +17,16 @@ const outfit = Outfit({
   weight: ["600", "700", "800"],
 });
 
+const caveat = Caveat({
+  variable: "--font-handwriting",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
 export const metadata = {
-  title: "8:15 PM // WIPEOUT",
-  description: "Real-time 2-player asymmetric Kolkata thriller — save Riya before the 03:00 remote wipe completes.",
+  title: "Wipeout",
+  description:
+    "Wipeout — 10-task sequential Kolkata thriller (15s per task). Play as Inspector Subir Sen or Rohan Chatterjee.",
 };
 
 export const viewport = {
@@ -31,7 +38,10 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable}`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} ${caveat.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

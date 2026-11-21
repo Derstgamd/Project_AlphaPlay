@@ -1,354 +1,127 @@
 "use client";
 
 import { useState } from "react";
-import { ADJ, CD, LAST_CHANCE_MS, LEADS, TAUNTS, ZONES } from "../constants";
-import {
-  cdLeft,
-  fictionClock,
-  handshakeLeftMs,
-  inFinal,
-  inHandshake,
-  isCyberLocked,
-  leadsSent,
-  timeLeftMs,
-  traceActive,
-  wipePct,
-} from "../engine";
+import { ZONES } from "../constants";
 import { sfx } from "../sfx";
-import { CdButton, cx, mmss, secs } from "./common";
+import { TASK_LIMIT_MS } from "../tasks";
+import { cx } from "./common";
 import MapBoard from "./MapBoard";
 import r from "./RohanConsole.module.css";
 import s from "./wipeout.module.css";
 
 export default function RohanView({
-  g,
-  now,
-  dispatch,
-  localToast,
+  run,
+  tasks,
+  currentTask,
+  dualScores,
+  mapGameState,
+  onPassTask,
+  onFailTask,
   muted,
   onToggleMute,
   onLeave,
 }) {
-  const [mapMode, setMapMode] = useState("reroute"); // reroute | spoof
+  const [showGuide, setShowGuide] = useState(false);
 
-  const tl = timeLeftMs(g, now);
-  const pct = wipePct(g, now);
-  const sent = leadsSent(g);
-  const final = inFinal(g, now);
-  const last10 = tl <= LAST_CHANCE_MS;
-  const hs = inHandshake(g, now);
-  const locked = isCyberLocked(g, now);
-  const trace = traceActive(g, now);
+  const { seed, phase, timeLeftMs, score, passedTasks, slips } = run;
+  const playing = phase === "playing";
+  const taskNum = currentTask.num;
+  const isCritical = taskNum >= 8;
 
-  const rerouteCd = cdLeft(g, "reroute", now);
-  const rerouteTotal = final ? CD.rerouteFinal : CD.reroute;
-  const spooferCd = cdLeft(g, "spoofer", now);
-  const sabCd = cdLeft(g, "sabotage", now);
-  const tauntCd = cdLeft(g, "taunt", now);
+  const timeSec = (timeLeftMs / 1000).toFixed(1);
+  const pctLeft = Math.max(0, Math.min(100, (timeLeftMs / TASK_LIMIT_MS) * 100));
+  const timerDanger = playing && timeLeftMs <= 5000;
 
-  const cloudBlocked = locked ? "LOCKED" : hs ? `LINK ${secs(handshakeLeftMs(g, now))}` : null;
-  const owBusy = g.leads.lead1.status === "overwriting" || g.leads.lead2.status === "overwriting";
-  const vaultAlert = g.vaultUnlocked && !g.vaultRelockUsed && g.leads.lead3.status === "active";
+  const suvName = ZONES[seed.suvZone]?.name || "Sector V";
+  const escapeName = ZONES[seed.escapeZone]?.name || "Chingrighata";
+  const blockedName = ZONES[seed.blockedNeighbor]?.name || "Kestopur";
 
-  function handleZoneTap(zoneId) {
-    if (g.status !== "playing" || !g.suvZone) return;
-    if (locked) {
-      localToast("Controls frozen by Lalbazar Cyber Cell!", "bad");
-      return;
-    }
-    if (mapMode === "reroute") {
-      if (zoneId === g.suvZone) return;
-      if (!(ADJ[g.suvZone] || []).includes(zoneId)) {
-        localToast("Tap a green connected zone next to the SUV", "info");
-        return;
-      }
-      if (rerouteCd > 0) {
-        localToast(`Driver reroute ready in ${secs(rerouteCd)}`, "info");
-        return;
-      }
-      sfx.tap();
-      dispatch({ type: "reroute", zone: zoneId });
+  const slipTaskNums = new Set(slips.map((sl) => sl.taskNum));
+
+  function handleOptionClick(opt) {
+    if (!playing) return;
+    if (opt.correct) {
+      if (taskNum === 8) sfx.revoke();
+      else sfx.forward();
+      onPassTask(
+        currentTask.milestone
+          ? `★ ${currentTask.milestoneLabel}!`
+          : `✅ Task ${taskNum} executed: ${opt.label}`
+      );
     } else {
-      if (zoneId === g.suvZone) {
-        localToast("Pick a DIFFERENT zone to plant a ghost ping", "info");
-        return;
-      }
-      if (spooferCd > 0) {
-        localToast(`GPS Spoofer ready in ${secs(spooferCd)}`, "info");
-        return;
-      }
-      sfx.good();
-      dispatch({ type: "spoof", zone: zoneId });
-      setMapMode("reroute");
+      onFailTask("wrong", `Wrong countermeasure ("${opt.label}") on Task ${taskNum}!`);
     }
   }
 
-  const urgentBanners = (
-    <>
-      {hs && (
-        <div className={cx(s.urgentBar, s.urgentAmber)}>
-          <span>☁️ CLOUD HANDSHAKE ({secs(handshakeLeftMs(g, now))}) — Reroute &amp; Spoof ready now!</span>
-        </div>
-      )}
-      {g.raidInFlight && (
-        <div className={cx(s.urgentBar, s.urgentRed)}>
-          <span>🚨 SIRENS CONVERGING ({secs(g.raidInFlight.arrivesAt - now)}) — STAY OR MOVE?</span>
-        </div>
-      )}
-      {trace && (
-        <div className={cx(s.urgentBar, s.urgentRed)}>
-          <span>🎯 FULL TRACE ON YOU ({secs(g.traceUntil - now)}) — REROUTE NOW!</span>
-        </div>
-      )}
-    </>
-  );
+  function handleMapZoneTap(zoneId) {
+    if (!playing) return;
+    if (currentTask.kind === "map_spoof") {
+      if (zoneId !== seed.suvZone) {
+        sfx.radarPing();
+        onPassTask(`Ghost ping planted at ${ZONES[zoneId]?.name}!`, {
+          spoofZone: zoneId,
+        });
+      } else {
+        onFailTask(
+          "wrong",
+          `Dropped the decoy ping on your own SUV (${suvName})!`
+        );
+      }
+      return;
+    }
 
-  const routeSection = (
-    <>
-      <div className={s.suvBanner}>
-        <div>
-          <small>SUV LOCATION</small>
-          <b>🚙 {g.suvZone ? ZONES[g.suvZone]?.name : "Standby · Salt Lake"}</b>
-        </div>
-        {g.fakePing && now < g.fakePing.expiresAt ? (
-          <span className={s.ghostBadge}>
-            👻 Ghost at {ZONES[g.fakePing.zone].name} ({secs(g.fakePing.expiresAt - now)})
-          </span>
-        ) : (
-          <span className={s.routeHint}>
-            {mapMode === "reroute"
-              ? rerouteCd > 0
-                ? `Next turn in ${secs(rerouteCd)}`
-                : "Click a green connected Kolkata zone"
-              : "Click any OTHER zone for ghost ping"}
-          </span>
-        )}
-      </div>
+    if (currentTask.kind === "map_escape") {
+      if (zoneId === seed.escapeZone) {
+        sfx.pinDrop();
+        onPassTask(
+          `★ MILESTONE 3/3: White SUV hit the ${escapeName} highway ramp and escaped Kolkata! (3/3)`
+        );
+      } else if (zoneId === seed.blockedNeighbor) {
+        sfx.siren();
+        onFailTask(
+          "wrong",
+          `Drove straight into the PCR Barricade at ${blockedName}!`
+        );
+      } else {
+        sfx.siren();
+        onFailTask(
+          "wrong",
+          `Wrong exit (${ZONES[zoneId]?.name}) — PCR boxed in the SUV! Open ramp was ${escapeName}.`
+        );
+      }
+      return;
+    }
 
-      <div className={s.mapWrap} style={{ flex: 1, minHeight: 240 }}>
-        <MapBoard g={g} now={now} role="rohan" mode={mapMode} onSelect={handleZoneTap} />
-      </div>
+    sfx.pinDrop();
+  }
 
-      <div className={s.mapControls}>
-        <button
-          type="button"
-          className={cx(s.modeBtn, mapMode === "reroute" && s.modeBtnOn)}
-          onClick={() => {
-            sfx.tap();
-            setMapMode("reroute");
-          }}
-        >
-          {rerouteCd > 0 && (
-            <span
-              className={s.cdSweep}
-              style={{ transform: `scaleX(${Math.min(1, rerouteCd / rerouteTotal)})` }}
-            />
-          )}
-          <span className={s.cdLabel}>
-            <span>🚙 REROUTE DRIVER</span>
-            <small>
-              {locked ? "LOCKED" : rerouteCd > 0 ? secs(rerouteCd) : final ? "READY (6s)" : "READY (10s)"}
-            </small>
-          </span>
-        </button>
+  const mapMode = currentTask.kind === "map_spoof" ? "spoof" : "reroute";
 
-        <button
-          type="button"
-          className={cx(
-            s.modeBtn,
-            s.modeGhost,
-            mapMode === "spoof" && s.modeBtnOn,
-            (spooferCd > 0 || locked) && s.disabled
-          )}
-          onClick={() => {
-            if (spooferCd > 0 || locked) return;
-            sfx.tap();
-            setMapMode((m) => (m === "spoof" ? "reroute" : "spoof"));
-          }}
-        >
-          {spooferCd > 0 && (
-            <span
-              className={s.cdSweep}
-              style={{ transform: `scaleX(${Math.min(1, spooferCd / CD.spoofer)})` }}
-            />
-          )}
-          <span className={s.cdLabel}>
-            <span>👻 GPS SPOOFER</span>
-            <small>{locked ? "LOCKED" : spooferCd > 0 ? secs(spooferCd) : "10s FAKE PING"}</small>
-          </span>
-        </button>
-      </div>
-
-      <div className={s.rohanTip}>
-        Tip: Entering a blue <b>CLEARED</b> zone lifts its stamp and alerts Inspector Sen.
-      </div>
-    </>
-  );
-
-  const attackSection = (
-    <div className={s.attackPanel}>
-      <div className={s.attackGroup}>
-        <div className={s.groupHead}>
-          <span>☁️ CLOUD OVERWRITE (PINGME)</span>
-          <small>{g.pingmePurged ? "PURGED AT 50%" : "4s race vs. Inspector"}</small>
-        </div>
-        <div className={s.owGrid}>
-          {["lead1", "lead2"].map((k) => {
-            const L = g.leads[k];
-            const isOw = L.status === "overwriting";
-            const statusText =
-              L.status === "saved"
-                ? "❌ SENT BY INSPECTOR"
-                : L.status === "deleted"
-                  ? "✅ WIPED"
-                  : L.status === "purged" || g.pingmePurged
-                    ? "PURGED"
-                    : isOw
-                      ? `OVERWRITING ${secs(L.overwriteEndsAt - now)}`
-                      : cloudBlocked || (owBusy ? "WAIT…" : "TAP TO WIPE (4s)");
-            const canTap = !cloudBlocked && !g.pingmePurged && L.status === "active" && !owBusy;
-            return (
-              <button
-                key={k}
-                type="button"
-                className={cx(
-                  s.owBtn,
-                  isOw && s.owBtnActive,
-                  L.status === "deleted" && s.owBtnDone,
-                  !canTap && !isOw && s.disabled
-                )}
-                onClick={() => {
-                  if (!canTap) return;
-                  sfx.tap();
-                  dispatch({ type: "overwrite", lead: k });
-                }}
-              >
-                <b>{LEADS[k].title}</b>
-                <small>{statusText}</small>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className={s.attackGroup}>
-        <div className={s.groupHead}>
-          <span>🔐 BANGOVAULT COUNTER</span>
-          <small>1 use per round</small>
-        </div>
-        <CdButton
-          small
-          icon="🔒"
-          label="RE-LOCK BANGOVAULT"
-          tone={vaultAlert ? "amber" : "red"}
-          blocked={
-            cloudBlocked ||
-            (g.vaultRelockUsed
-              ? "USED"
-              : g.leads.lead3.status === "saved"
-                ? "ALREADY UPLOADED"
-                : !g.vaultUnlocked
-                  ? "STILL LOCKED"
-                  : null)
-          }
-          readyText="KICK TO KEYPAD!"
-          onClick={() => dispatch({ type: "relockVault" })}
-        />
-      </div>
-
-      <div className={s.attackGroup}>
-        <div className={s.groupHead}>
-          <span>⚡ REMOTE SABOTAGE POPUPS</span>
-          <small>{sabCd > 0 ? `Shared CD: ${secs(sabCd)}` : "Shared 18s CD"}</small>
-        </div>
-        <div className={s.sabGrid}>
-          <CdButton
-            small
-            icon="📞"
-            label="FAKE CALL"
-            tone="red"
-            cdLeft={sabCd}
-            cdTotal={CD.sabotage}
-            blocked={cloudBlocked || (g.popup ? "ACTIVE" : null)}
-            readyText="4s BLOCK"
-            onClick={() => dispatch({ type: "fakeCall" })}
-          />
-          <CdButton
-            small
-            icon="⚙️"
-            label="ACCEL RESET"
-            tone="red"
-            cdLeft={sabCd}
-            cdTotal={CD.sabotage}
-            blocked={cloudBlocked || (g.popup ? "ACTIVE" : null)}
-            readyText="−5s PENALTY"
-            onClick={() => dispatch({ type: "abortWipe" })}
-          />
-          <CdButton
-            small
-            icon="📝"
-            label="CORRUPT PIN"
-            tone="amber"
-            cdLeft={sabCd}
-            cdTotal={CD.sabotage}
-            blocked={cloudBlocked || (g.notesPurged ? "PURGED" : null)}
-            readyText="8s GLITCH"
-            onClick={() => dispatch({ type: "corruptNote" })}
-          />
-        </div>
-      </div>
-
-      <div className={s.attackGroup}>
-        <div className={s.groupHead}>
-          <span>💬 TAUNTS</span>
-          <small>{tauntCd > 0 ? secs(tauntCd) : "10s CD"}</small>
-        </div>
-        <div className={s.tauntList}>
-          {TAUNTS.map((txt, idx) => (
-            <button
-              key={idx}
-              type="button"
-              className={cx(s.tauntBtn, tauntCd > 0 && s.disabled)}
-              disabled={tauntCd > 0}
-              onClick={() => {
-                sfx.tap();
-                dispatch({ type: "taunt", idx });
-              }}
-            >
-              “{txt}”
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const cyberOverlay = locked && (
-    <div className={s.cyberOverlay}>
-      <div className={s.cyberCard}>
-        <div className={s.cyberSeal}>🚨</div>
-        <h3>SESSION TRACED BY LALBAZAR CYBER CELL</h3>
-        <div className={s.cyberCount}>VPN REROUTING… {secs(g.cyberLockUntil - now)}</div>
-        <p>All remote &amp; routing controls frozen</p>
-      </div>
-    </div>
-  );
-
-  /* ═══════════════════════════════════════════════════════════
-     BACK-SEAT LAPTOP OS — Split Kolkata Map + Remote Wipe Console
-     ═══════════════════════════════════════════════════════════ */
   return (
-    <div className={cx(r.laptop, last10 && s.lastChance)}>
+    <div className={cx(r.laptop, timerDanger && s.lastChance)}>
       <header className={r.topBar}>
         <div className={r.topLeft}>
-          <span className={r.greenTag}>● ROHAN · BACK SEAT LAPTOP</span>
-          <span className={cx(r.topChip, final && s.timerRed)}>⏱️ {mmss(tl)}</span>
-          <span className={r.topChip}>WIPE {pct}%</span>
-          <span className={r.topChip}>LEADS {sent}/3</span>
-          <span className={r.topChip}>🚓 {g.raidsRemaining}</span>
+          <span className={r.greenTag}>● WIPEOUT · ROHAN CHATTERJEE</span>
+          <span className={r.topChip}>TASK {taskNum} / 10</span>
+          <span className={r.topChip} style={{ color: "#86efac", fontWeight: 800 }}>
+            ROHAN: {score}/3 (BEST {dualScores.rohanBest}/3)
+          </span>
+          <span className={r.topChip} style={{ color: "#7dd3fc" }}>
+            SUBIR BEST: {dualScores.fatherBest}/3
+          </span>
+          <span className={r.topChip}>SLIPS (1–7): {slips.length}</span>
         </div>
         <div className={r.topRight}>
-          <span>{fictionClock(g, now)}</span>
+          <button
+            type="button"
+            className={r.topBtn}
+            onClick={() => {
+              sfx.paperFlip();
+              setShowGuide((v) => !v);
+            }}
+          >
+            ? Rules
+          </button>
           <button type="button" className={r.topBtn} onClick={onToggleMute}>
             {muted ? "🔇" : "🔊"}
           </button>
@@ -358,17 +131,42 @@ export default function RohanView({
         </div>
       </header>
 
-      <div className={r.wipeStrip}>
-        <div className={s.wipeTrack}>
-          <span className={cx(s.wipeBar, s.wipeBarGreen)} style={{ width: `${pct}%` }} />
-          <i className={s.wipeTick} style={{ left: "50%" }} />
-          <i className={s.wipeTick} style={{ left: "80%" }} />
+      {/* Big, crystal-clear Task & Lead Banner */}
+      <div className={cx(r.taskBanner, isCritical && r.taskBannerCritical)}>
+        <div className={r.taskTopRow}>
+          <div className={r.taskMetaLeft}>
+            <span className={r.taskPill}>TASK {taskNum} / 10</span>
+            {isCritical ? (
+              <span className={r.dangerPill}>
+                ★ SUDDEN DEATH · GOAL {taskNum - 7} / 3 (FAIL ENDS RUN)
+              </span>
+            ) : (
+              <span className={r.safePill}>
+                TASKS 1–7 · SLIPS CONTINUE (FAIL STARTS AT TASK 8)
+              </span>
+            )}
+            <span className={r.taskTitle}>{currentTask.title}</span>
+          </div>
+          <div className={cx(r.timerBox, timerDanger && r.timerBoxDanger)}>
+            {timeSec}s
+          </div>
+        </div>
+
+        <p className={r.taskLead}>
+          <b style={{ color: isCritical ? "#fca5a5" : "#4ade80" }}>LEAD:</b>{" "}
+          {currentTask.lead}
+        </p>
+
+        <div className={r.timerTrack}>
+          <span
+            className={cx(r.timerFill, (timerDanger || isCritical) && r.timerFillDanger)}
+            style={{ width: `${pctLeft}%` }}
+          />
         </div>
       </div>
 
-      {urgentBanners}
-
       <main className={r.splitGrid}>
+        {/* Left Window: Live Kolkata OpenStreetMap */}
         <section className={r.window}>
           <div className={r.winBar}>
             <span className={r.dots}>
@@ -377,11 +175,37 @@ export default function RohanView({
               <i style={{ background: "#22c55e" }} />
             </span>
             <span>GETAWAY SUV · KOLKATA MAP</span>
-            <span>{g.suvZone ? ZONES[g.suvZone]?.name : "Standby"}</span>
+            <span>SUV AT {suvName.toUpperCase()}</span>
           </div>
-          <div className={r.mapBody}>{routeSection}</div>
+
+          <div className={r.mapBody}>
+            <div className={s.suvBanner}>
+              <div>
+                <small>WHITE SUV WB-06-{seed.plateNum}</small>
+                <b style={{ fontSize: 16 }}>🚙 {suvName}</b>
+              </div>
+              <span className={s.routeHint} style={{ fontSize: 13 }}>
+                {currentTask.kind === "map_spoof"
+                  ? `Click ANY zone OTHER than ${suvName} to drop a fake ping!`
+                  : currentTask.kind === "map_escape"
+                    ? `🚧 ${blockedName} BARRICADED — Click ${escapeName} to escape!`
+                    : "Execute the active countermeasure on the right console →"}
+              </span>
+            </div>
+
+            <div className={s.mapWrap} style={{ flex: 1, minHeight: 240 }}>
+              <MapBoard
+                g={mapGameState}
+                now={0}
+                role="rohan"
+                mode={mapMode}
+                onSelect={handleMapZoneTap}
+              />
+            </div>
+          </div>
         </section>
 
+        {/* Right Window: Clean Focused Current Task Console */}
         <section className={r.window}>
           <div className={r.winBar}>
             <span className={r.dots}>
@@ -389,14 +213,131 @@ export default function RohanView({
               <i style={{ background: "#f59e0b" }} />
               <i style={{ background: "#22c55e" }} />
             </span>
-            <span>REMOTE WIPE CONSOLE</span>
-            <span>{vaultAlert ? "VAULT OPEN!" : "LIVE"}</span>
+            <span>REMOTE COMMAND CONSOLE</span>
+            <span>{isCritical ? "🔴 SUDDEN DEATH" : "🟢 ACTIVE"}</span>
           </div>
-          <div className={r.attackScroll}>{attackSection}</div>
+
+          {/* 10-Step Progress Strip */}
+          <div className={r.stepStrip} aria-label="10 tasks progress">
+            {tasks.map((t) => {
+              const done = passedTasks.includes(t.num);
+              const slipped = slipTaskNums.has(t.num);
+              const active = t.num === taskNum && phase !== "ended";
+              return (
+                <span
+                  key={t.num}
+                  title={`Task ${t.num}: ${t.title}`}
+                  className={cx(
+                    r.stepNode,
+                    t.milestone && r.stepNodeMilestone,
+                    done && r.stepNodeDone,
+                    slipped && r.stepNodeSlip,
+                    active && r.stepNodeNow
+                  )}
+                >
+                  {t.milestone ? `★${t.num}` : t.num}
+                </span>
+              );
+            })}
+          </div>
+
+          <div className={r.consoleBody}>
+            {currentTask.kind === "choice" ? (
+              <div className={r.cardGroup}>
+                <div className={r.cardTitle}>
+                  <span>
+                    {isCritical
+                      ? `🚨 CRITICAL END-GOAL (${taskNum - 7}/3) — PICK EXACT COMMAND`
+                      : `⚡ TASK ${taskNum} COUNTERMEASURE — PICK 1 OF 3`}
+                  </span>
+                  <small>{timeSec}s LEFT</small>
+                </div>
+
+                <div className={r.optionStack}>
+                  {currentTask.options.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={cx(r.optBtn, isCritical && r.optBtnCritical)}
+                      disabled={!playing}
+                      onClick={() => handleOptionClick(opt)}
+                    >
+                      <span className={r.optLabel}>{opt.label}</span>
+                      <span className={r.optSub}>{opt.sub}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : currentTask.kind === "map_spoof" ? (
+              <div className={r.mapCallout}>
+                <strong>← ACT ON THE KOLKATA MAP</strong>
+                <p style={{ margin: 0 }}>
+                  Click any Kolkata pushpin <b>OTHER THAN {suvName}</b> on the left map to plant a
+                  ghost GPS signal and mislead Inspector Sen.
+                </p>
+              </div>
+            ) : (
+              <div className={cx(r.mapCallout, r.mapCalloutDanger)}>
+                <strong>← FINAL ESCAPE ON KOLKATA MAP (3/3)</strong>
+                <p style={{ margin: 0 }}>
+                  Bidhannagar PCR barricaded the road to <b>{blockedName}</b>! Click{" "}
+                  <b>{escapeName}</b> on the Kolkata Map on the left to break out onto the highway
+                  ramp before the 15s cutoff!
+                </p>
+              </div>
+            )}
+
+            {slips.length > 0 && (
+              <div className={r.slipList}>
+                <strong>SLIPS LOGGED IN TASKS 1–7 ({slips.length}):</strong>
+                {slips.slice(-3).map((sl) => (
+                  <span key={sl.taskNum}>
+                    • Task {sl.taskNum}: {sl.reason}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className={r.playbookCard}>
+              <strong>ROHAN&apos;S END-GOAL MILESTONES (/3)</strong>
+              <div>
+                • <b>Task 8 (1/3):</b> Lock Remote Delete so Subir cannot revoke access.
+              </div>
+              <div>
+                • <b>Task 9 (2/3):</b> Sever the Lalbazar Police Uplink before Tender #404 uploads.
+              </div>
+              <div>
+                • <b>Task 10 (3/3):</b> Hit the open Kolkata highway ramp around the PCR barricade.
+              </div>
+            </div>
+          </div>
         </section>
       </main>
 
-      {cyberOverlay}
+      {showGuide && (
+        <aside className={r.guideModal} aria-label="How to play as Rohan">
+          <div className={r.guideModalHead}>
+            <span>WIPEOUT · ROHAN CHATTERJEE</span>
+            <button type="button" className={r.topBtn} onClick={() => setShowGuide(false)}>
+              ✕
+            </button>
+          </div>
+          <ul>
+            <li>
+              <b>10 Sequential Tasks (15s Each):</b> Complementary to Inspector Subir Sen&apos;s
+              10-step hunt.
+            </li>
+            <li>
+              <b>Tasks 1–7 Forgiveness:</b> Missing or timing out Tasks 1–7 logs a slip and keeps
+              you moving forward.
+            </li>
+            <li>
+              <b>Tasks 8–10 Sudden Death (/3):</b> Starting at Task 8, any wrong call or timeout
+              immediately ends your run!
+            </li>
+          </ul>
+        </aside>
+      )}
     </div>
   );
 }

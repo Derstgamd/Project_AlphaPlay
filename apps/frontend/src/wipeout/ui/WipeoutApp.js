@@ -1,26 +1,140 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { LAST_CHANCE_MS } from "../constants";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { WipeoutController } from "../controller";
-import { timeLeftMs } from "../engine";
-import { isMuted, setMuted, sfx } from "../sfx";
-import { PeerAway, Toasts, useNow, useToasts } from "./common";
+import { isMuted, music, setMuted, sfx } from "../sfx";
+import { loadDualScores } from "../tasks";
+import { useTaskRun } from "../useTaskRun";
+import { Toasts } from "./common";
 import FatherView from "./FatherView";
 import { JoiningScreen, LandingScreen, PairingScreen } from "./LobbyScreens";
 import { EndingNotification, LockNotification } from "./LockAndEndScreens";
 import RohanView from "./RohanView";
 import c from "./ClipboardLobby.module.css";
 
+function TaskRunSession({ initialRole, muted, onToggleMute, onExit, onScoresUpdated }) {
+  const [toasts, setToasts] = useState([]);
+
+  const pushToast = useCallback((text, kind = "info") => {
+    const id = `t_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    setToasts((prev) => [...prev.filter((x) => x.text !== text), { key: id, kind, text }].slice(-3));
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((x) => x.key !== id));
+    }, 3600);
+  }, []);
+
+  const {
+    run,
+    tasks,
+    currentTask,
+    dualScores,
+    mapGameState,
+    beginRun,
+    restart,
+    passTask,
+    failTask,
+  } = useTaskRun(initialRole, pushToast);
+
+  useEffect(() => {
+    onScoresUpdated?.(dualScores);
+  }, [dualScores, onScoresUpdated]);
+
+  // Adaptive suspense soundtrack per phase, milestone & final-5s panic
+  const isCritical =
+    run.phase === "playing" && (currentTask.num >= 8 || run.timeLeftMs <= 5000);
+  const musicScene =
+    run.phase === "ready"
+      ? "briefing"
+      : run.phase === "playing"
+        ? isCritical
+          ? "critical"
+          : "playing"
+        : run.endReason === "victory"
+          ? "victory"
+          : "defeat";
+
+  useEffect(() => {
+    music.setScene(musicScene);
+  }, [musicScene]);
+
+  const otherRole = run.role === "father" ? "rohan" : "father";
+
+  return (
+    <main style={{ position: "relative", width: "100%", height: "100dvh", overflow: "hidden" }}>
+      <Toasts toasts={toasts} />
+
+      {run.phase === "ready" && (
+        <LockNotification
+          role={run.role}
+          dualScores={dualScores}
+          onStart={beginRun}
+          onSwitchRole={(nextRole) => restart(nextRole, false)}
+          onLeave={onExit}
+        />
+      )}
+
+      {run.phase === "ended" && (
+        <EndingNotification
+          run={run}
+          dualScores={dualScores}
+          onRestartSame={() => restart(run.role, false)}
+          onRestartOther={() => restart(otherRole, false)}
+          onLeave={onExit}
+        />
+      )}
+
+      {run.role === "father" ? (
+        <FatherView
+          key={`father-${run.runId}`}
+          run={run}
+          tasks={tasks}
+          currentTask={currentTask}
+          dualScores={dualScores}
+          mapGameState={mapGameState}
+          onPassTask={passTask}
+          onFailTask={failTask}
+          muted={muted}
+          onToggleMute={onToggleMute}
+          onLeave={onExit}
+        />
+      ) : (
+        <RohanView
+          key={`rohan-${run.runId}`}
+          run={run}
+          tasks={tasks}
+          currentTask={currentTask}
+          dualScores={dualScores}
+          mapGameState={mapGameState}
+          onPassTask={passTask}
+          onFailTask={failTask}
+          muted={muted}
+          onToggleMute={onToggleMute}
+          onLeave={onExit}
+        />
+      )}
+    </main>
+  );
+}
+
 export default function WipeoutApp() {
   const [ctl] = useState(() => new WipeoutController());
   const snap = useSyncExternalStore(ctl.subscribe, ctl.getSnapshot, ctl.getSnapshot);
-  const now = useNow(ctl, 100);
   const [muted, setMutedState] = useState(() => isMuted());
+  const [soloRole, setSoloRole] = useState(null); // null | "father" | "rohan"
+  const [dualScores, setDualScores] = useState({
+    fatherBest: 0,
+    rohanBest: 0,
+    fatherLast: null,
+    rohanLast: null,
+  });
 
-  const g = snap.game;
-  const role = g && snap.side ? g.roles[snap.side] : null;
-  const { toasts, local } = useToasts(g, role, now);
+  // Hydrate /3 scores client-side without sync setState-in-effect
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDualScores(loadDualScores());
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   // Auto-join when opened via QR code link `/?room=4829`
   useEffect(() => {
@@ -33,125 +147,77 @@ export default function WipeoutApp() {
     return () => ctl.leave();
   }, [ctl]);
 
-  // Countdown ticks, GO chime, final-10s heartbeat ticks, siren, and victory/defeat fanfare
-  const prevStatus = useRef(null);
-  const lastSec = useRef(null);
-  const lastRaid = useRef(null);
-
-  const status = g?.status || null;
-  const winner = g?.winner || null;
-  const raidAt = g?.raidInFlight?.arrivesAt || null;
-  const cdSec = status === "countdown" ? Math.ceil((g.countdownEndsAt - now) / 1000) : null;
-  const tlSec = status === "playing" ? Math.ceil(timeLeftMs(g, now) / 1000) : null;
-  const inLast10 = status === "playing" && timeLeftMs(g, now) <= LAST_CHANCE_MS;
-
-  useEffect(() => {
-    if (prevStatus.current === "countdown" && status === "playing") sfx.go();
-    if (prevStatus.current !== "over" && status === "over" && role) {
-      const won = (role === "father" && winner === "father") || (role === "rohan" && winner !== "father");
-      if (won) sfx.win();
-      else sfx.lose();
-    }
-    prevStatus.current = status;
-  }, [status, winner, role]);
-
-  useEffect(() => {
-    if (cdSec !== null && cdSec > 0 && lastSec.current !== `cd${cdSec}`) {
-      lastSec.current = `cd${cdSec}`;
-      sfx.tick();
-    } else if (inLast10 && tlSec !== null && tlSec > 0 && lastSec.current !== `tl${tlSec}`) {
-      lastSec.current = `tl${tlSec}`;
-      sfx.tick();
-    }
-  }, [cdSec, tlSec, inLast10]);
-
-  useEffect(() => {
-    if (raidAt && lastRaid.current !== raidAt) {
-      lastRaid.current = raidAt;
-      sfx.siren();
-    }
-  }, [raidAt]);
-
   function toggleMute() {
     const next = !muted;
     setMuted(next);
     setMutedState(next);
-  }
-
-  const isLobby =
-    snap.screen === "landing" || snap.screen === "pairing" || snap.screen === "joining";
-
-  let view = null;
-  if (snap.screen === "landing") view = <LandingScreen ctl={ctl} />;
-  else if (snap.screen === "pairing") view = <PairingScreen ctl={ctl} snap={snap} />;
-  else if (snap.screen === "joining") view = <JoiningScreen ctl={ctl} snap={snap} />;
-  else if (g && role) {
-    // Always stay in the Laptop UI across lock, countdown, playing, and over
-    if (role === "father") {
-      view = (
-        <FatherView
-          g={g}
-          now={now}
-          dispatch={ctl.dispatch}
-          localToast={local}
-          muted={muted}
-          onToggleMute={toggleMute}
-          onLeave={ctl.leave}
-        />
-      );
-    } else {
-      view = (
-        <RohanView
-          g={g}
-          now={now}
-          dispatch={ctl.dispatch}
-          localToast={local}
-          muted={muted}
-          onToggleMute={toggleMute}
-          onLeave={ctl.leave}
-        />
-      );
+    if (!next) {
+      sfx.unlock();
+      sfx.tap();
     }
   }
 
-  if (isLobby) {
+  function handleExit() {
+    sfx.paperFlip();
+    setSoloRole(null);
+    ctl.leave();
+    setDualScores(loadDualScores());
+  }
+
+  const pairedRole =
+    snap.screen === "game" && snap.game && snap.side ? snap.game.roles[snap.side] : null;
+  const activeRole = soloRole || pairedRole;
+
+  // Play moody nocturnal suspense score on Lobby screens too
+  useEffect(() => {
+    if (!activeRole) {
+      music.setScene("lobby");
+    }
+  }, [activeRole]);
+
+  useEffect(() => {
+    return () => music.setScene("off");
+  }, []);
+
+  if (activeRole) {
     return (
-      <main className={c.deskStage}>
-        <Toasts toasts={toasts} />
-        {view}
-      </main>
+      <TaskRunSession
+        key={`session-${activeRole}`}
+        initialRole={activeRole}
+        muted={muted}
+        onToggleMute={toggleMute}
+        onExit={handleExit}
+        onScoresUpdated={setDualScores}
+      />
     );
   }
 
-  const phaseNotification =
-    g && role ? (
-      g.status === "lock" || g.status === "countdown" ? (
-        <LockNotification
-          g={g}
-          role={role}
-          now={now}
-          dispatch={ctl.dispatch}
-          onLeave={ctl.leave}
-          inPhone={false}
-        />
-      ) : g.status === "over" ? (
-        <EndingNotification
-          g={g}
-          role={role}
-          now={now}
-          dispatch={ctl.dispatch}
-          onLeave={ctl.leave}
-          inPhone={false}
-        />
-      ) : null
-    ) : null;
+  let lobbyView = null;
+  if (snap.screen === "pairing") {
+    lobbyView = (
+      <PairingScreen
+        ctl={ctl}
+        snap={snap}
+        muted={muted}
+        onToggleMute={toggleMute}
+        onStartSolo={setSoloRole}
+      />
+    );
+  } else if (snap.screen === "joining") {
+    lobbyView = (
+      <JoiningScreen ctl={ctl} snap={snap} muted={muted} onToggleMute={toggleMute} />
+    );
+  } else {
+    lobbyView = (
+      <LandingScreen
+        ctl={ctl}
+        dualScores={dualScores}
+        muted={muted}
+        onToggleMute={toggleMute}
+        onStartSolo={setSoloRole}
+      />
+    );
+  }
 
-  return (
-    <main style={{ position: "relative", width: "100%", height: "100dvh", overflow: "hidden" }}>
-      <PeerAway link={snap.link} mode={snap.mode} />
-      <Toasts toasts={toasts} />
-      {phaseNotification}
-      {view}
-    </main>
-  );
+  return <main className={c.deskStage}>{lobbyView}</main>;
 }

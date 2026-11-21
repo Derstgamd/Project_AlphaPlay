@@ -1,107 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  ABORT_TAPS,
-  CD,
-  CHATS,
-  CONTRACTOR_ID,
-  HOLD_MS,
-  LAST_CHANCE_MS,
-  LEADS,
-  ZONES,
-} from "../constants";
-import {
-  cdLeft,
-  fictionClock,
-  inFinal,
-  isCyberLocked,
-  leadOpen,
-  leadsSent,
-  raidBlock,
-  timeLeftMs,
-  traceActive,
-  wipePct,
-} from "../engine";
+import { useEffect, useRef, useState } from "react";
+import { CONTRACTOR_ID, ROHAN_NUMBER, ZONES } from "../constants";
 import { sfx } from "../sfx";
-import { CdButton, cx, HoldButton, mmss, secs } from "./common";
-import { GAME_APP_META, GameAppIcon } from "./GameIcons";
+import { TASK_LIMIT_MS } from "../tasks";
+import { cx } from "./common";
+import {
+  BrowserApp,
+  CallLogsApp,
+  FilesApp,
+  GalleryApp,
+  SettingsApp,
+} from "./ExtraLaptopApps";
+import { GAME_APP_META, GameAppIcon, NINE_APP_IDS } from "./GameIcons";
 import MapBoard from "./MapBoard";
 import f from "./FatherWorkspace.module.css";
 import s from "./wipeout.module.css";
 
-function AbortPopup({ endsAt, now, onCleared }) {
-  const [taps, setTaps] = useState(0);
-  const left = Math.max(0, endsAt - now);
-  const rem = Math.max(0, ABORT_TAPS - taps);
-
-  function hit() {
-    sfx.tap();
-    const next = taps + 1;
-    setTaps(next);
-    if (next >= ABORT_TAPS) {
-      sfx.good();
-      onCleared();
-    }
-  }
-
-  return (
-    <div className={s.popupOverlay}>
-      <div className={cx(s.popupCard, s.popupDanger)}>
-        <div className={s.popupIcon}>⚙️</div>
-        <h3>FACTORY RESET ACCELERATING…</h3>
-        <p>Tap ABORT WIPE {ABORT_TAPS} times fast or lose 5 seconds!</p>
-        <div className={s.popupBar}>
-          <span style={{ width: `${Math.min(100, (left / 3000) * 100)}%` }} />
-        </div>
-        <button type="button" className={s.abortBtn} onClick={hit}>
-          ABORT WIPE ({rem} LEFT)
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function FakeCallPopup({ endsAt, now, onDecline }) {
-  const left = Math.max(0, endsAt - now);
-  return (
-    <div className={s.popupOverlay}>
-      <div className={cx(s.popupCard, s.popupCall)}>
-        <div className={s.callTag}>INCOMING CALL · SPAM RISK</div>
-        <div className={s.callNum}>+91 70440-81924</div>
-        <div className={s.callSub}>Unknown burner · auto-drops in {secs(left)}</div>
-        <button
-          type="button"
-          className={s.declineBtn}
-          onClick={() => {
-            sfx.tap();
-            onDecline();
-          }}
-        >
-          📵 SWIPE / TAP TO DECLINE
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function VaultKeypad({ onSubmit }) {
+function VaultKeypad({ playing, onSubmit }) {
   const [pin, setPin] = useState("");
+  const pinRef = useRef("");
+  const submitRef = useRef(onSubmit);
 
-  function press(d) {
-    sfx.tap();
-    const next = (pin + d).slice(0, 4);
+  useEffect(() => {
+    submitRef.current = onSubmit;
+  }, [onSubmit]);
+
+  function updatePin(next) {
+    pinRef.current = next;
     setPin(next);
+  }
+
+  function submitDigit(d) {
+    if (!playing) return;
+    sfx.keyPress();
+    const next = (pinRef.current + d).slice(0, 4);
+    updatePin(next);
     if (next.length === 4) {
-      onSubmit(next);
-      setTimeout(() => setPin(""), 220);
+      setTimeout(() => {
+        submitRef.current(next);
+        updatePin("");
+      }, 120);
     }
   }
+
+  // Allow fast desktop keyboard entry under the 15s cutoff
+  useEffect(() => {
+    if (!playing) return;
+    function onKey(e) {
+      if (e.key >= "0" && e.key <= "9") {
+        submitDigit(e.key);
+      } else if (e.key === "Backspace") {
+        sfx.tap();
+        updatePin(pinRef.current.slice(0, -1));
+      } else if (e.key === "Escape") {
+        sfx.tap();
+        updatePin("");
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
 
   return (
     <div className={s.keypadWrap}>
-      <div className={s.vaultBrand}>🔐 BANGOVAULT — DEPT AUDIT</div>
-      <div className={s.pinPrompt}>ENTER 4-DIGIT DEPT PIN (CHECK QUICKNOTES)</div>
+      <div className={s.vaultBrand}>🔐 BANGOVAULT — TENDER #404 FRAUD DOSSIER</div>
+      <div className={s.pinPrompt} style={{ fontSize: 15, color: "#cbd5e1" }}>
+        ENTER 4-DIGIT PIN (CLICK OR TYPE ON KEYBOARD)
+      </div>
       <div className={s.pinSlots}>
         {[0, 1, 2, 3].map((i) => (
           <span key={i} className={cx(s.pinDot, pin[i] && s.pinDotFilled)}>
@@ -115,10 +82,17 @@ function VaultKeypad({ onSubmit }) {
             key={k}
             type="button"
             className={s.keyBtn}
+            disabled={!playing}
             onClick={() => {
-              if (k === "CLR") setPin("");
-              else if (k === "⌫") setPin((p) => p.slice(0, -1));
-              else press(k);
+              if (k === "CLR") {
+                sfx.tap();
+                updatePin("");
+              } else if (k === "⌫") {
+                sfx.tap();
+                updatePin(pinRef.current.slice(0, -1));
+              } else {
+                submitDigit(k);
+              }
             }}
           >
             {k}
@@ -201,23 +175,30 @@ function LooseYarnArt() {
 }
 
 export default function FatherView({
-  g,
-  now,
-  dispatch,
+  run,
+  tasks,
+  currentTask,
+  dualScores,
+  mapGameState,
+  onPassTask,
+  onFailTask,
   muted,
   onToggleMute,
   onLeave,
 }) {
-  // Always start on Laptop OS ("device") with Messages open; clicking CholoMap opens Workspace ("workspace")
-  const [surface, setSurface] = useState("device"); // "device" | "workspace"
-  const [app, setApp] = useState("pingme"); // null | "pingme" | "notes" | "vault"
-  const [chatId, setChatId] = useState("rohan"); // "rohan" | "ananya" | "gatebot" | "dispatch"
-  const [notesSeen, setNotesSeen] = useState(false);
-  const [selectedZone, setSelectedZone] = useState("sectorv");
-  const [visibleCountByChat, setVisibleCountByChat] = useState({ rohan: 1, ananya: 0, gatebot: 0 });
-  const [forwardedLogs, setForwardedLogs] = useState([]);
+  const { seed, phase, timeLeftMs, score, passedTasks } = run;
+  const playing = phase === "playing";
+  const taskNum = currentTask.num;
 
-  // Kolkata map marking state (custom notes + red yarn strings on the CholoMap Workspace)
+  const [surface, setSurface] = useState("device"); // "device" | "workspace"
+  const [app, setApp] = useState("pingme");
+  const [chatId, setChatId] = useState("rohan");
+  const [vaultUnlocked, setVaultUnlocked] = useState(false);
+  const [selectedZone, setSelectedZone] = useState(() => seed.decoyZone || "saltlake");
+  const [forwardedLogs, setForwardedLogs] = useState([]);
+  const [showGuide, setShowGuide] = useState(false);
+
+  // CholoMap custom marking state
   const [customPins, setCustomPins] = useState([]);
   const [customYarns, setCustomYarns] = useState([]);
   const [noteTitle, setNoteTitle] = useState("");
@@ -226,90 +207,128 @@ export default function FatherView({
   const [yarnMode, setYarnMode] = useState(false);
   const [yarnStartId, setYarnStartId] = useState(null);
 
-  const tl = timeLeftMs(g, now);
-  const pct = wipePct(g, now);
-  const sent = leadsSent(g);
-  const final = inFinal(g, now);
-  const last10 = tl <= LAST_CHANCE_MS;
-  const paused = !!g.popup;
+  const timeSec = (timeLeftMs / 1000).toFixed(1);
+  const pctLeft = Math.max(0, Math.min(100, (timeLeftMs / TASK_LIMIT_MS) * 100));
+  const timerDanger = playing && timeLeftMs <= 5000;
 
-  const activeOw = ["lead1", "lead2"].find((k) => g.leads[k].status === "overwriting");
-  const trace = traceActive(g, now);
-  const locked = isCyberLocked(g, now);
-
-  // Progressive chat unlock: start with ONLY Rohan, then unlock Ananya -> GateBot one by one
-  const lead1Done = g.leads.lead1.status === "saved" || g.leads.lead1.status === "deleted";
-  const lead2Done = g.leads.lead2.status === "saved" || g.leads.lead2.status === "deleted";
-  const ananyaUnlocked = lead1Done || g.leads.lead2.status === "overwriting";
-  const gatebotUnlocked = lead2Done;
-
-  const availableChatIds = [
-    "rohan",
-    ...(ananyaUnlocked ? ["ananya"] : []),
-    ...(gatebotUnlocked ? ["gatebot"] : []),
-  ];
-
-  // Drip messages into the active chat one by one so conversations unfold naturally
-  useEffect(() => {
-    if (chatId === "dispatch" || !CHATS[chatId]) return;
-    const total = CHATS[chatId].messages.length;
-    const shown = visibleCountByChat[chatId] || 0;
-    if (shown >= total) return;
-    const t = setTimeout(() => {
-      setVisibleCountByChat((prev) => ({
-        ...prev,
-        [chatId]: Math.min(total, (prev[chatId] || 0) + 1),
-      }));
-    }, shown === 0 ? 250 : 650);
-    return () => clearTimeout(t);
-  }, [chatId, visibleCountByChat]);
-
-  function handleForwardLead(leadKey, quoteText) {
-    if (g.status !== "playing") return;
-    sfx.good();
-    dispatch({ type: "sendLead", lead: leadKey });
-    setForwardedLogs((prev) => [
-      ...prev,
-      {
-        id: `fwd_${leadKey}_${Date.now()}`,
-        from: leadKey === "lead1" ? "Rohan" : "Ananya (Dept)",
-        text: quoteText,
-        time: fictionClock(g, now),
-      },
-    ]);
-  }
-
-  const chatsOpen = !g.pingmePurged && (leadOpen(g.leads.lead1) || leadOpen(g.leads.lead2));
-  const badgePingMe = chatsOpen || !!activeOw;
-  const badgeNotes = !chatsOpen && !g.notesPurged && !g.vaultUnlocked && g.leads.lead3.status === "active" && !notesSeen;
-  const badgeVault = !chatsOpen && (notesSeen || g.notesPurged) && g.leads.lead3.status === "active";
-  const badgeMap = sent >= 1 || trace;
-  const deviceNeedsAttention = badgePingMe || badgeNotes || badgeVault;
-
-  const pingCd = cdLeft(g, "ping", now);
-  const pingTotal = final ? CD.pingFinal : CD.ping;
-  const lockCd = cdLeft(g, "cyberLock", now);
-  const rBlock = raidBlock(g, now);
-
-  const mapSelected = trace && g.suvZone ? g.suvZone : selectedZone;
-  const selPing = g.pings.find((p) => p.zone === mapSelected);
-  const canAttach = noteTitle.trim().length > 0 || noteBody.trim().length > 0;
-
-  // Live dispatch messages feed ("everything comes as a message")
-  const dispatchMessages = (g.events || [])
-    .filter((e) => e.to === "father" || e.to === "both")
-    .slice(-20);
+  const ananyaUnlocked = taskNum >= 4 || passedTasks.includes(3);
+  const gatebotUnlocked = taskNum >= 5 || passedTasks.includes(4);
+  const pinRecovered = passedTasks.includes(7);
 
   function openDockApp(next) {
-    sfx.tap();
     if (next === "map") {
+      sfx.mapOpen();
       setSurface("workspace");
       return;
     }
-    if (next === "notes") setNotesSeen(true);
+    sfx.appOpen();
+    if (next === "pingme" && taskNum === 4) {
+      setChatId("ananya");
+    }
     setApp(next);
     setSurface("device");
   }
+
+  function handleForwardChatMessage(fromLabel, text, targetTaskNum) {
+    if (!playing) return;
+    if (targetTaskNum === taskNum) {
+      sfx.forward();
+      setForwardedLogs((prev) => [
+        ...prev,
+        { id: `fwd_${taskNum}_${Date.now()}`, from: fromLabel, text },
+      ]);
+      if (taskNum === 1) {
+        onPassTask("Rohan's back-gate lure forwarded to Lalbazar!");
+      } else if (taskNum === 4) {
+        onPassTask("Ananya's Bypass Corridor warning forwarded to Lalbazar!");
+      }
+    } else if (taskNum === 1 || taskNum === 4) {
+      onFailTask(
+        "wrong",
+        taskNum === 1
+          ? "Wrong message forwarded — you needed Rohan's back-gate lure!"
+          : "Wrong message forwarded — you needed Ananya's Bypass Corridor warning!"
+      );
+    } else {
+      onFailTask(
+        "wrong",
+        `Wrong action in PingMe — follow your active Task ${taskNum} Lead!`
+      );
+    }
+  }
+
+  function handlePickNotePin(chosen) {
+    if (!playing) return;
+    if (taskNum === 7 && chosen === seed.vaultPin) {
+      sfx.stamp();
+      onPassTask(`BangoVault PIN ${seed.vaultPin} copied to your case bar!`);
+    } else if (taskNum === 7) {
+      onFailTask(
+        "wrong",
+        `Wrong PIN logged (${chosen}) — Riya's note clearly listed ${seed.vaultPin}!`
+      );
+    } else {
+      onFailTask("wrong", `Check your active Task ${taskNum} Lead first!`);
+    }
+  }
+
+  function handleVaultPinSubmit(entered) {
+    if (!playing) return;
+    if (taskNum !== 9) {
+      onFailTask("wrong", `BangoVault isn't active yet — follow Task ${taskNum} first!`);
+      return;
+    }
+    if (entered === seed.vaultPin) {
+      sfx.vaultUnlock();
+      setVaultUnlocked(true);
+    } else {
+      onFailTask(
+        "wrong",
+        `Wrong BangoVault PIN (${entered}) — vault locked down! Correct PIN was ${seed.vaultPin}.`
+      );
+    }
+  }
+
+  function handleVaultTransmit(sendToPolice) {
+    if (!playing) return;
+    if (taskNum === 9 && sendToPolice) {
+      sfx.forward();
+      onPassTask(
+        "★ MILESTONE 2/3: Tender #404 fraud dossier & Contractor ID sent to Lalbazar Police!"
+      );
+    } else {
+      onFailTask(
+        "wrong",
+        "Saved locally instead of transmitting fraud info to the authorities!"
+      );
+    }
+  }
+
+  function handleDispatchRescue() {
+    if (!playing) return;
+    if (taskNum !== 10) {
+      onFailTask(
+        "wrong",
+        `Premature PCR dispatch! Complete Task ${taskNum} (${currentTask.title}) before raiding.`
+      );
+      return;
+    }
+    if (selectedZone === seed.suvZone) {
+      sfx.siren();
+      onPassTask(
+        `★ MILESTONE 3/3: PCR rescued Riya at ${ZONES[seed.suvZone].name}! WIPEOUT COMPLETE (3/3)!`
+      );
+    } else {
+      sfx.siren();
+      onFailTask(
+        "wrong",
+        `PCR raided ${ZONES[selectedZone].name} — empty streets! Riya's SUV was at ${ZONES[seed.suvZone].name}!`
+      );
+    }
+  }
+
+  // CholoMap notebook & yarn helpers
+  const canAttach = noteTitle.trim().length > 0 || noteBody.trim().length > 0;
 
   function handleArmNotebookPin() {
     if (pendingNote) {
@@ -317,7 +336,7 @@ export default function FatherView({
       return;
     }
     if (!canAttach) return;
-    sfx.tap();
+    sfx.paperFlip();
     setYarnMode(false);
     setYarnStartId(null);
     setPendingNote({
@@ -328,7 +347,7 @@ export default function FatherView({
 
   function handlePlacePin({ lat, lng }) {
     if (!pendingNote) return;
-    sfx.tap();
+    sfx.pinDrop();
     setCustomPins((prev) => [
       ...prev,
       { id: `cp_${Date.now()}`, lat, lng, title: pendingNote.title, note: pendingNote.note },
@@ -339,13 +358,13 @@ export default function FatherView({
   }
 
   function handleDeleteCustomPin(id) {
-    sfx.tap();
+    sfx.paperFlip();
     setCustomPins((prev) => prev.filter((p) => p.id !== id));
     setCustomYarns((prev) => prev.filter((y) => y.fromId !== id && y.toId !== id));
   }
 
   function handleYarnNodeClick(nodeId) {
-    sfx.tap();
+    sfx.yarnTie();
     if (!yarnStartId) {
       setYarnStartId(nodeId);
       return;
@@ -366,80 +385,92 @@ export default function FatherView({
     setYarnStartId(null);
   }
 
-  const urgentBanners = (
-    <>
-      {activeOw && (
-        <button
-          type="button"
-          className={cx(s.urgentBar, s.urgentRed)}
-          onClick={() => {
-            sfx.tap();
-            setChatId(activeOw === "lead1" ? "rohan" : "ananya");
-            openDockApp("pingme");
-          }}
-        >
-          <span>
-            ⚠️ OVERWRITING &ldquo;{LEADS[activeOw].title}&rdquo; — {secs(g.leads[activeOw].overwriteEndsAt - now)}
-          </span>
-          <b>RACE →</b>
-        </button>
-      )}
-      {trace && surface !== "workspace" && (
-        <button
-          type="button"
-          className={cx(s.urgentBar, s.urgentBlue)}
-          onClick={() => openDockApp("map")}
-        >
-          <span>🎯 FULL TRACE LIVE ({secs(g.traceUntil - now)}) — SUV PINPOINTED!</span>
-          <b>CHOLOMAP →</b>
-        </button>
-      )}
-      {g.raidInFlight && (
-        <div className={cx(s.urgentBar, s.urgentBlue)}>
-          <span>
-            🚓 PCR VAN EN ROUTE TO {ZONES[g.raidInFlight.zone].name.toUpperCase()} —{" "}
-            {secs(g.raidInFlight.arrivesAt - now)}
-          </span>
-        </div>
-      )}
-    </>
-  );
+  const inTargetApp =
+    (currentTask.app === "map" && surface === "workspace") ||
+    (currentTask.app !== "map" && surface === "device" && app === currentTask.app);
 
-  const popups = (
-    <>
-      {g.popup?.kind === "fake_call" && (
-        <FakeCallPopup endsAt={g.popup.endsAt} now={now} onDecline={() => dispatch({ type: "declineCall" })} />
-      )}
-      {g.popup?.kind === "abort_wipe" && (
-        <AbortPopup
-          key={g.popup.endsAt}
-          endsAt={g.popup.endsAt}
-          now={now}
-          onCleared={() => dispatch({ type: "abortCleared" })}
+  // Shared prominent 15s Task & Lead Banner (visible in both Laptop OS and CholoMap Workspace)
+  const taskLeadBanner = (
+    <div className={cx(f.taskBanner, currentTask.milestone && f.taskBannerMilestone)}>
+      <div className={f.taskTopRow}>
+        <div className={f.taskLeft}>
+          <span className={f.taskNumPill}>TASK {currentTask.num} / 10</span>
+          {currentTask.milestone && (
+            <span className={f.milestonePill}>★ GOAL {currentTask.num - 7} / 3</span>
+          )}
+          <span className={f.taskTitle}>{currentTask.title}</span>
+        </div>
+
+        <div className={f.taskRight}>
+          {!inTargetApp && playing && (
+            <button
+              type="button"
+              className={f.taskJumpBtn}
+              onClick={() => openDockApp(currentTask.app)}
+            >
+              Open {GAME_APP_META[currentTask.app]?.label} →
+            </button>
+          )}
+          <div className={cx(f.taskTimerBox, timerDanger && f.taskTimerDanger)}>
+            {timeSec}s
+          </div>
+        </div>
+      </div>
+
+      <p className={f.taskLead}>
+        <b>LEAD:</b> {currentTask.lead}
+      </p>
+
+      <div className={f.taskBarTrack}>
+        <span
+          className={cx(f.taskBarFill, timerDanger && f.taskBarDanger)}
+          style={{ width: `${pctLeft}%` }}
         />
-      )}
-    </>
+      </div>
+
+      <div className={f.stepRow} aria-label="10 task progress">
+        {tasks.map((t) => {
+          const done = passedTasks.includes(t.num);
+          const nowStep = t.num === taskNum && phase !== "ended";
+          return (
+            <span
+              key={t.num}
+              title={`Task ${t.num}: ${t.title}`}
+              className={cx(
+                f.stepDot,
+                t.milestone && f.stepDotMilestone,
+                done && f.stepDotDone,
+                nowStep && f.stepDotNow
+              )}
+            />
+          );
+        })}
+      </div>
+    </div>
   );
 
   /* ═══════════════════════════════════════════════════════════
-     CHOLOMAP WORKSPACE — Opens when user clicks CholoMap
+     CHOLOMAP WORKSPACE — Kolkata OpenStreetMap + Desk Tools
      ═══════════════════════════════════════════════════════════ */
   if (surface === "workspace") {
     return (
-      <div className={cx(f.deskSurface, last10 && s.lastChance)}>
+      <div className={cx(f.deskSurface, timerDanger && s.lastChance)}>
         <div className={f.deskVignette} aria-hidden="true" />
-        <div style={{ position: "relative", zIndex: 470 }}>{urgentBanners}</div>
+        {taskLeadBanner}
 
         <div className={f.deskGrid}>
-          {/* Left: Folded Live Kolkata OpenStreetMap + Ping/Raid Bar */}
+          {/* Left: Folded Live Kolkata OpenStreetMap + PCR Rescue Dispatch Bar */}
           <div className={f.mapColumn}>
             <div className={f.mapFrame}>
               <MapBoard
-                g={g}
-                now={now}
+                g={mapGameState}
+                now={0}
                 role="father"
-                selected={mapSelected}
-                onSelect={setSelectedZone}
+                selected={selectedZone}
+                onSelect={(z) => {
+                  sfx.pinDrop();
+                  setSelectedZone(z);
+                }}
                 customPins={customPins}
                 customYarns={customYarns}
                 pendingNote={pendingNote}
@@ -458,56 +489,25 @@ export default function FatherView({
 
             <div className={f.deskTacticalBar}>
               <div className={f.zoneInfo}>
-                <b>
-                  {ZONES[mapSelected].name}
-                  {selPing
-                    ? ` · ${
-                        selPing.result === "strong"
-                          ? "🔴 STRONG"
-                          : selPing.result === "weak"
-                            ? "🟠 ADJACENT"
-                            : "🔵 NO SIGNAL"
-                      }`
-                    : ""}
+                <b style={{ fontSize: 16 }}>
+                  Selected Zone: {ZONES[selectedZone]?.name}
+                  {taskNum === 10 && selectedZone === seed.suvZone ? " · 🎯 LIVE SUV SIGNAL" : ""}
                 </b>
-                <small>
-                  {ZONES[mapSelected].sub}
-                  {g.clearedZones.includes(mapSelected) ? " · CCTV CLEARED" : ""} ·{" "}
-                  {g.pings.length > 0
-                    ? `Last ping: ${ZONES[g.pings[0].zone].name} (${secs(now - g.pings[0].at)} ago)`
-                    : "Click any Kolkata zone pin to Ping or Raid"}
+                <small style={{ fontSize: 12.5 }}>
+                  {ZONES[selectedZone]?.sub} · Click a Kolkata pushpin on the map, then dispatch PCR Rescue!
                 </small>
               </div>
 
               <div className={f.tacticalBtns}>
-                <CdButton
-                  small
-                  icon="📡"
-                  label="PING LOCKET"
-                  tone="cyan"
-                  cdLeft={pingCd}
-                  cdTotal={pingTotal}
-                  onClick={() => dispatch({ type: "ping", zone: mapSelected })}
-                />
-                <CdButton
-                  small
-                  icon="🚓"
-                  label={`RAID ${ZONES[mapSelected].name.split(" ")[0].toUpperCase()}`}
-                  tone="red"
-                  blocked={rBlock}
-                  readyText={`${g.raidsRemaining} VAN${g.raidsRemaining === 1 ? "" : "S"}`}
-                  onClick={() => dispatch({ type: "raid", zone: mapSelected })}
-                />
-                <CdButton
-                  small
-                  icon="🛡️"
-                  label={locked ? `LOCK ${secs(g.cyberLockUntil - now)}` : "CYBER LOCK"}
-                  tone="blue"
-                  cdLeft={lockCd}
-                  cdTotal={CD.cyberLock}
-                  readyText="5s FREEZE"
-                  onClick={() => dispatch({ type: "cyberLock" })}
-                />
+                <button
+                  type="button"
+                  className={cx(f.actionBtn, f.actionBtnDanger)}
+                  style={{ padding: "11px 18px", fontSize: 15 }}
+                  disabled={!playing}
+                  onClick={handleDispatchRescue}
+                >
+                  🚓 DISPATCH PCR RESCUE ({ZONES[selectedZone]?.name.toUpperCase()})
+                </button>
               </div>
             </div>
           </div>
@@ -516,32 +516,27 @@ export default function FatherView({
           <aside className={f.toolsColumn}>
             <div className={f.clockUnit}>
               <div className={f.clockTopRow}>
-                <span className={f.ledTimer}>{mmss(tl)}</span>
+                <span className={f.ledTimer}>{timeSec}s</span>
                 <div className={f.ledMeta}>
-                  <span>{fictionClock(g, now)} · FRI</span>
-                  <span>WIPE {pct}%</span>
+                  <span>WIPEOUT · SUBIR</span>
+                  <span>TASK {taskNum} / 10</span>
                 </div>
               </div>
-              <div className={s.wipeTrack}>
-                <span className={s.wipeBar} style={{ width: `${pct}%` }} />
-                <i className={s.wipeTick} style={{ left: "50%" }} />
-                <i className={s.wipeTick} style={{ left: "80%" }} />
-              </div>
               <div className={f.ledStats}>
-                <span className={f.ledChip}>LEADS {sent}/3</span>
-                <span className={f.ledChip}>🚓 {g.raidsRemaining}</span>
-                <span className={f.ledChip}>WB-06-{g.plateNum || "----"}</span>
+                <span className={f.ledChip}>SCORE {score}/3</span>
+                <span className={f.ledChip}>ROHAN {dualScores.rohanBest}/3</span>
+                <span className={f.ledChip}>WB-06-{seed.plateNum}</span>
               </div>
               <div className={f.clockActions}>
                 <button
                   type="button"
                   className={f.tinyBtn}
                   onClick={() => {
-                    sfx.tap();
+                    sfx.appOpen();
                     setSurface("device");
                   }}
                 >
-                  ← Back to Laptop {deviceNeedsAttention ? "●" : ""}
+                  ← Back to Laptop
                 </button>
                 <div style={{ display: "flex", gap: 5 }}>
                   <button type="button" className={f.tinyBtn} onClick={onToggleMute}>
@@ -560,6 +555,7 @@ export default function FatherView({
                 className={f.looseObj}
                 title="Pushpins — write in notebook to pin on Kolkata map"
                 onClick={() => {
+                  sfx.pinDrop();
                   setYarnMode(false);
                   setYarnStartId(null);
                 }}
@@ -572,7 +568,7 @@ export default function FatherView({
                   className={cx(f.looseObj, yarnMode && f.loosePicked)}
                   title={yarnMode ? "Click 2 pins on Kolkata map" : "Ball of red yarn — click to tie two pins"}
                   onClick={() => {
-                    sfx.tap();
+                    sfx.yarnTie();
                     setPendingNote(null);
                     setYarnStartId(null);
                     setYarnMode((v) => !v);
@@ -584,7 +580,10 @@ export default function FatherView({
                   <button
                     type="button"
                     className={f.undoYarn}
-                    onClick={() => setCustomYarns((prev) => prev.slice(0, -1))}
+                    onClick={() => {
+                      sfx.paperFlip();
+                      setCustomYarns((prev) => prev.slice(0, -1));
+                    }}
                   >
                     Undo ({customYarns.length})
                   </button>
@@ -643,17 +642,16 @@ export default function FatherView({
           </aside>
         </div>
 
-        {/* Right-edge Chevron back to Laptop UI */}
         <button
           type="button"
           className={f.deviceChevron}
           aria-label="Back to Laptop UI"
           onClick={() => {
-            sfx.tap();
+            sfx.appOpen();
             setSurface("device");
           }}
         >
-          {deviceNeedsAttention && <span className={f.chevronPulse} />}
+          {currentTask.app !== "map" && <span className={f.chevronPulse} />}
           <svg viewBox="0 0 24 48" width="22" height="44" aria-hidden="true">
             <path
               d="M6 8 L18 24 L6 40"
@@ -666,29 +664,88 @@ export default function FatherView({
           </svg>
           <span className={f.chevronTip}>Back to Laptop</span>
         </button>
-
-        {popups}
       </div>
     );
   }
 
   /* ═══════════════════════════════════════════════════════════
-     PRIMARY SCREEN — Laptop OS (Everything Comes as Messages)
+     PRIMARY SCREEN — Riya's 9-App Laptop OS (Inspector Subir Sen)
      ═══════════════════════════════════════════════════════════ */
+  const rohanChatMsgs = [
+    {
+      from: "them",
+      time: "7:50 PM",
+      text: "Near your block. 10-min walk? Need to clear my head. Meet me at the back garden gate — street lights are out, quieter there.",
+      targetTask: 1,
+      fromLabel: "Rohan",
+    },
+    {
+      from: "me",
+      time: "7:52 PM",
+      text: "Ok! Coming down in 5 🙂",
+      targetTask: null,
+      fromLabel: "Riya",
+    },
+  ];
+
+  const ananyaChatMsgs = [
+    {
+      from: "them",
+      time: "7:05 PM",
+      text: "Are you free for lunch at the canteen tomorrow?",
+      targetTask: null,
+      fromLabel: "Ananya (Dept)",
+    },
+    {
+      from: "me",
+      time: "7:14 PM",
+      text: "Maybe after I finish the audit folder — showing Baba after dinner.",
+      targetTask: null,
+      fromLabel: "Riya",
+    },
+    {
+      from: "them",
+      time: "7:20 PM",
+      text: "Careful. Someone on our floor tipped off the syndicate. Tender #404 is rigged — they run everything out of the Bypass corridor.",
+      targetTask: 4,
+      fromLabel: "Ananya (Dept)",
+    },
+  ];
+
   return (
-    <div className={cx(f.laptopOs, last10 && s.lastChance)}>
+    <div className={cx(f.laptopOs, timerDanger && s.lastChance)}>
       <header className={f.menuBar}>
         <div className={f.menuLeft}>
-          <strong>Riya&apos;s Laptop · Inspector Subir Sen</strong>
-          <span className={f.menuMono}>WB-06-{g.plateNum || "----"}</span>
+          <strong>WIPEOUT · Inspector Subir Sen</strong>
+          <span className={f.menuMono}>WB-06-{seed.plateNum}</span>
+          {pinRecovered && (
+            <span
+              className={f.menuMono}
+              style={{ color: "#fde047", fontWeight: 800 }}
+            >
+              PIN: {seed.vaultPin}
+            </span>
+          )}
         </div>
         <div className={f.menuRight}>
-          <span className={cx(f.menuMono, final && s.timerRed)}>⏱️ {mmss(tl)}</span>
-          <span className={f.menuMono}>LEADS {sent}/3</span>
-          <span className={f.menuMono}>WIPE {pct}%</span>
-          <span className={f.menuMono}>🚓 {g.raidsRemaining}</span>
+          <span className={f.menuMono} style={{ color: "#7dd3fc", fontWeight: 800 }}>
+            SUBIR: {score}/3 (BEST {dualScores.fatherBest}/3)
+          </span>
+          <span className={f.menuMono} style={{ color: "#fca5a5" }}>
+            ROHAN: {dualScores.rohanBest}/3
+          </span>
           <button type="button" className={f.menuBtn} onClick={() => openDockApp("map")}>
-            🗺️ CholoMap {badgeMap ? "●" : ""}
+            🗺️ CholoMap {currentTask.app === "map" ? "●" : ""}
+          </button>
+          <button
+            type="button"
+            className={f.menuBtn}
+            onClick={() => {
+              sfx.paperFlip();
+              setShowGuide((v) => !v);
+            }}
+          >
+            ? Rules
           </button>
           <button type="button" className={f.menuBtn} onClick={onToggleMute}>
             {muted ? "🔇" : "🔊"}
@@ -699,37 +756,27 @@ export default function FatherView({
         </div>
       </header>
 
-      <div style={{ padding: "0 14px 4px", background: "rgba(10,14,22,0.86)" }}>
-        <div className={s.wipeTrack}>
-          <span className={s.wipeBar} style={{ width: `${pct}%` }} />
-          <i className={s.wipeTick} style={{ left: "50%" }} />
-          <i className={s.wipeTick} style={{ left: "80%" }} />
-        </div>
-      </div>
-
-      {urgentBanners}
+      {taskLeadBanner}
 
       <main className={f.osStage}>
         {app === null ? (
           <div className={f.desktopEmpty}>
             <div className={f.desktopIconGrid}>
-              {[
-                ["pingme", badgePingMe ? "!" : null],
-                ["notes", badgeNotes ? "1" : null],
-                ["vault", badgeVault ? "1" : null],
-                ["map", badgeMap ? "●" : null],
-              ].map(([id, badge]) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={f.desktopShortcut}
-                  onClick={() => openDockApp(id)}
-                >
-                  <GameAppIcon id={id} size={48} />
-                  {badge && <span className={f.dockBadge}>{badge}</span>}
-                  <span>{GAME_APP_META[id].label}</span>
-                </button>
-              ))}
+              {NINE_APP_IDS.map((id) => {
+                const isTarget = currentTask.app === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={f.desktopShortcut}
+                    onClick={() => openDockApp(id)}
+                  >
+                    <GameAppIcon id={id} size={50} />
+                    {isTarget && <span className={f.dockBadge}>!</span>}
+                    <span>{GAME_APP_META[id].label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -742,7 +789,7 @@ export default function FatherView({
                   aria-label="Close app"
                   title="Close app"
                   onClick={() => {
-                    sfx.tap();
+                    sfx.appClose();
                     setApp(null);
                   }}
                 />
@@ -751,12 +798,12 @@ export default function FatherView({
               </div>
               <span className={f.winTitle}>{GAME_APP_META[app]?.label}</span>
               <div className={f.winMeta}>
-                <span>{fictionClock(g, now)}</span>
+                <span>TASK {taskNum}/10</span>
                 <button
                   type="button"
                   className={f.winCloseBtn}
                   onClick={() => {
-                    sfx.tap();
+                    sfx.appClose();
                     setApp(null);
                   }}
                 >
@@ -766,40 +813,55 @@ export default function FatherView({
             </div>
 
             <div className={f.winContent}>
-              {/* PINGME — Messages (starts with Rohan only, unfolds one by one, Forward to Lalbazar) */}
+              {/* PINGME (Tasks 1 & 4) */}
               {app === "pingme" && (
                 <>
                   <div className={s.chatTabs}>
-                    {!g.pingmePurged &&
-                      availableChatIds.map((id) => {
-                        const c = CHATS[id];
-                        const L = c.lead ? g.leads[c.lead] : null;
-                        const hot = L && leadOpen(L);
-                        const ow = L?.status === "overwriting";
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            className={cx(s.chatTab, chatId === id && s.chatTabOn, ow && s.chatTabOw)}
-                            onClick={() => {
-                              sfx.tap();
-                              setChatId(id);
-                            }}
-                          >
-                            {c.name.split(" ")[0]}
-                            {hot && <i className={s.tabDot} />}
-                          </button>
-                        );
-                      })}
+                    <button
+                      type="button"
+                      className={cx(s.chatTab, chatId === "rohan" && s.chatTabOn)}
+                      onClick={() => {
+                        sfx.tabSwitch();
+                        setChatId("rohan");
+                      }}
+                    >
+                      Rohan
+                      {taskNum === 1 && <i className={s.tabDot} />}
+                    </button>
+                    {ananyaUnlocked && (
+                      <button
+                        type="button"
+                        className={cx(s.chatTab, chatId === "ananya" && s.chatTabOn)}
+                        onClick={() => {
+                          sfx.tabSwitch();
+                          setChatId("ananya");
+                        }}
+                      >
+                        Ananya (Dept)
+                        {taskNum === 4 && <i className={s.tabDot} />}
+                      </button>
+                    )}
+                    {gatebotUnlocked && (
+                      <button
+                        type="button"
+                        className={cx(s.chatTab, chatId === "gatebot" && s.chatTabOn)}
+                        onClick={() => {
+                          sfx.tabSwitch();
+                          setChatId("gatebot");
+                        }}
+                      >
+                        GateBot
+                      </button>
+                    )}
                     <button
                       type="button"
                       className={cx(s.chatTab, chatId === "dispatch" && s.chatTabOn)}
                       onClick={() => {
-                        sfx.tap();
+                        sfx.tabSwitch();
                         setChatId("dispatch");
                       }}
                     >
-                      Lalbazar ({forwardedLogs.length + dispatchMessages.length})
+                      Lalbazar ({forwardedLogs.length})
                     </button>
                   </div>
 
@@ -807,141 +869,97 @@ export default function FatherView({
                     <div className={s.chatBody}>
                       <div className={s.chatInfo}>
                         <b>Lalbazar Dispatch</b>
-                        <span>Forwarded evidence &amp; live alerts</span>
+                        <span>Forwarded evidence trail</span>
                       </div>
                       <div className={s.msgList}>
                         <div className={cx(s.bubble, s.bubbleThem)}>
                           <p>
-                            🚨 Remote wipe detected on Riya&apos;s device (03:00 delay). Forward suspicious chats here
-                            so we can clear Kolkata zones on <b>CholoMap</b>.
+                            🚨 Remote wipe detected on Riya&apos;s laptop. Follow each 15-second lead
+                            and forward key messages here!
                           </p>
-                          <span className={s.bubbleTime}>8:15 PM</span>
                         </div>
                         {forwardedLogs.map((fwd) => (
                           <div key={fwd.id} className={cx(s.bubble, s.bubbleMe)}>
                             <div className={f.forwardedQuote}>↪ Forwarded from {fwd.from}</div>
                             <p>{fwd.text}</p>
-                            <span className={s.bubbleTime}>{fwd.time} · Sent to Lalbazar</span>
-                          </div>
-                        ))}
-                        {dispatchMessages.map((ev) => (
-                          <div key={ev.id} className={cx(s.bubble, s.bubbleThem)}>
-                            <p>{ev.text}</p>
+                            <span className={s.bubbleTime}>Sent to Lalbazar</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                  ) : g.pingmePurged ? (
-                    <div className={s.purgedBox}>
-                      <div>🚫</div>
-                      <h3>PINGME PURGED (50% WIPE)</h3>
-                      <p>Chat history was erased by the remote wipe.</p>
-                      <p>
-                        GateBot&apos;s vehicle plate <b>WB-06-{g.plateNum || "----"}</b> is still pinned in your bar, and
-                        QuickNotes &amp; Lalbazar Dispatch remain available.
-                      </p>
+                  ) : chatId === "gatebot" && gatebotUnlocked ? (
+                    <div className={s.chatBody}>
+                      <div className={s.chatInfo}>
+                        <b>Salt Lake GateBot</b>
+                        <span>Automated Security Camera · 8:13 PM</span>
+                      </div>
+                      <div className={s.msgList}>
+                        <div className={cx(s.bubble, s.bubbleThem, s.bubbleLead)}>
+                          <p>
+                            ⚠️ BACK LANE CAM: White SUV <b>WB-06-{seed.plateNum}</b> sped out of CK
+                            Block Back Gate at 8:13 PM.
+                          </p>
+                          <button
+                            type="button"
+                            className={f.forwardBtn}
+                            onClick={() => openDockApp("browser")}
+                          >
+                            <span>🌐 Look up WB-06-{seed.plateNum} in Browser →</span>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     (() => {
-                      const activeChatKey = availableChatIds.includes(chatId) ? chatId : "rohan";
-                      const chat = CHATS[activeChatKey];
-                      const visibleMsgs = chat.messages.slice(
-                        0,
-                        Math.max(1, visibleCountByChat[activeChatKey] || 1)
-                      );
-                      const stillTyping = visibleMsgs.length < chat.messages.length;
-
+                      const isAnanya = chatId === "ananya" && ananyaUnlocked;
+                      const list = isAnanya ? ananyaChatMsgs : rohanChatMsgs;
                       return (
                         <div className={s.chatBody}>
                           <div className={s.chatInfo}>
-                            <b>{chat.name}</b>
-                            <span>{chat.number ? `${chat.number} · ${chat.seen}` : chat.seen}</span>
+                            <b>{isAnanya ? "Ananya (Dept)" : "Rohan Chatterjee"}</b>
+                            <span>
+                              {isAnanya
+                                ? "Urban Dev. Dept · Last seen 7:20 PM"
+                                : `${ROHAN_NUMBER} · Last seen 7:51 PM`}
+                            </span>
                           </div>
                           <div className={s.msgList}>
-                            {visibleMsgs.map((m, i) => {
-                              const text = m.text.replace("{PLATE}", g.plateNum || "----");
-                              const L = m.lead ? g.leads[m.lead] : null;
-                              const isDeleted = L?.status === "deleted";
-                              const isSaved = L?.status === "saved";
-                              const isOw = L?.status === "overwriting";
+                            {list.map((m, idx) => {
+                              const alreadyPassed =
+                                m.targetTask && passedTasks.includes(m.targetTask);
                               return (
                                 <div
-                                  key={i}
+                                  key={idx}
                                   className={cx(
                                     s.bubble,
                                     m.from === "me" ? s.bubbleMe : s.bubbleThem,
-                                    m.lead && !isDeleted && !isSaved && s.bubbleLead,
-                                    isOw && s.bubbleOw,
-                                    isSaved && s.bubbleSaved,
-                                    isDeleted && s.bubbleDeleted
+                                    m.targetTask === taskNum && s.bubbleLead,
+                                    alreadyPassed && s.bubbleSaved
                                   )}
                                 >
-                                  {isDeleted ? (
-                                    <div className={s.deletedMsg}>🚫 Restored from older backup (wiped remotely)</div>
+                                  <p>{m.text}</p>
+                                  <span className={s.bubbleTime}>{m.time}</span>
+                                  {alreadyPassed ? (
+                                    <div className={s.savedTag}>✅ FORWARDED TO LALBAZAR</div>
                                   ) : (
-                                    <>
-                                      <p>{text}</p>
-                                      <span className={s.bubbleTime}>{m.time}</span>
-                                    </>
-                                  )}
-                                  {m.lead && isOw && (
-                                    <div className={s.owWarn}>
-                                      ⚠️ OVERWRITING IN {secs(L.overwriteEndsAt - now)} — FORWARD NOW!
-                                    </div>
-                                  )}
-                                  {m.lead && leadOpen(L) && (
                                     <button
                                       type="button"
-                                      className={cx(f.forwardBtn, isOw && f.forwardBtnUrgent)}
-                                      onClick={() => handleForwardLead(m.lead, text)}
+                                      className={f.forwardBtn}
+                                      disabled={!playing}
+                                      onClick={() =>
+                                        handleForwardChatMessage(
+                                          m.fromLabel,
+                                          m.text,
+                                          m.targetTask
+                                        )
+                                      }
                                     >
                                       <span>↪ Forward to Lalbazar</span>
-                                      <small>{LEADS[m.lead].via} · clears 2 zones</small>
                                     </button>
-                                  )}
-                                  {m.lead && isSaved && (
-                                    <div className={s.savedTag}>✅ FORWARDED TO LALBAZAR — 2 zones cleared</div>
                                   )}
                                 </div>
                               );
                             })}
-                            {stillTyping && (
-                              <div className={cx(s.bubble, s.bubbleThem)}>
-                                <p>…</p>
-                              </div>
-                            )}
-
-                            {/* Guided nudge to next incoming chat once current lead is forwarded */}
-                            {activeChatKey === "rohan" && ananyaUnlocked && (
-                              <div className={f.nextChatHint}>
-                                <span>📩 New chat recovered: <b>Ananya (Dept)</b></span>
-                                <button
-                                  type="button"
-                                  className={f.nextChatBtn}
-                                  onClick={() => {
-                                    sfx.tap();
-                                    setChatId("ananya");
-                                  }}
-                                >
-                                  Open Chat →
-                                </button>
-                              </div>
-                            )}
-                            {activeChatKey === "ananya" && gatebotUnlocked && (
-                              <div className={f.nextChatHint}>
-                                <span>📩 New alert recovered: <b>Salt Lake GateBot</b></span>
-                                <button
-                                  type="button"
-                                  className={f.nextChatBtn}
-                                  onClick={() => {
-                                    sfx.tap();
-                                    setChatId("gatebot");
-                                  }}
-                                >
-                                  Open Alert →
-                                </button>
-                              </div>
-                            )}
                           </div>
                         </div>
                       );
@@ -950,98 +968,146 @@ export default function FatherView({
                 </>
               )}
 
-              {/* QUICKNOTES */}
-              {app === "notes" &&
-                (g.notesPurged ? (
-                  <div className={s.purgedBox}>
-                    <div>🚫</div>
-                    <h3>QUICKNOTES PURGED (80% WIPE)</h3>
-                    <p>All notes have been wiped. Hope you remembered the BangoVault PIN!</p>
+              {/* QUICKNOTES (Task 7) */}
+              {app === "notes" && (
+                <div className={s.notesList}>
+                  <div className={s.noteCard}>
+                    <div className={s.noteTitle}>Tonight</div>
+                    <p>Remind Baba about BP meds. Warm up dal before 9 PM.</p>
                   </div>
-                ) : (
-                  <div className={s.notesList}>
-                    <div className={s.noteCard}>
-                      <div className={s.noteTitle}>Tonight</div>
-                      <p>Remind Baba about BP meds. Warm up dal before 9 PM.</p>
-                    </div>
-                    <div className={cx(s.noteCard, s.notePinCard, now < g.notesCorruptUntil && s.noteCorrupt)}>
-                      <div className={s.noteTitle}>BangoVault Backup PIN</div>
-                      {now < g.notesCorruptUntil ? (
-                        <>
-                          <div className={s.pinBigGlitch}>#@!%</div>
-                          <p className={s.corruptSub}>
-                            Sync corrupted by remote device · auto-restores in {secs(g.notesCorruptUntil - now)}
-                          </p>
-                          <HoldButton
-                            key={`restore-${g.notesCorruptUntil}`}
-                            ms={HOLD_MS.restore}
-                            paused={paused}
-                            tone="cyan"
-                            label="HOLD 1s: RESTORE NOTE"
-                            onDone={() => dispatch({ type: "restoreNote" })}
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <div className={s.pinBig}>{g.vaultPin || "----"}</div>
-                          <p className={s.pinSub}>Temporary Dept Passcode — enter in BangoVault</p>
-                        </>
-                      )}
-                    </div>
-                    <div className={s.noteCard}>
-                      <div className={s.noteTitle}>Weird (Last Week)</div>
-                      <p>
-                        Linked my cloud backup to R&apos;s phone (<b>…44102</b>) &ldquo;for safety&rdquo;?? Should
-                        unlink it soon.
-                      </p>
-                    </div>
+                  <div className={cx(s.noteCard, s.notePinCard)}>
+                    <div className={s.noteTitle}>BangoVault Backup PIN</div>
+                    <div className={s.pinBig}>{seed.vaultPin}</div>
+                    <p className={s.pinSub} style={{ fontSize: 15 }}>
+                      Click the matching 4-digit PIN below to lock it into your Case Clipboard:
+                    </p>
+                    {pinRecovered ? (
+                      <div className={s.savedTag} style={{ fontSize: 14 }}>
+                        ✅ PIN {seed.vaultPin} RECOVERED &amp; SAVED TO TOP BAR
+                      </div>
+                    ) : (
+                      <div className={f.pinChoiceRow}>
+                        {seed.pinChoices.map((choice) => (
+                          <button
+                            key={choice}
+                            type="button"
+                            className={f.pinChoiceBtn}
+                            disabled={!playing}
+                            onClick={() => handlePickNotePin(choice)}
+                          >
+                            {choice}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
+                  <div className={s.noteCard}>
+                    <div className={s.noteTitle}>Weird (Last Week)</div>
+                    <p>
+                      Linked my cloud backup to R&apos;s phone (<b>{ROHAN_NUMBER}</b>) &ldquo;for
+                      safety&rdquo;?? Must revoke it in System right away.
+                    </p>
+                  </div>
+                </div>
+              )}
 
-              {/* BANGOVAULT */}
+              {/* BANGOVAULT (Task 9 — ★ MILESTONE 2/3) */}
               {app === "vault" &&
-                (!g.vaultUnlocked && g.leads.lead3.status !== "saved" ? (
-                  <VaultKeypad
-                    key={g.vaultRelockUsed ? "relocked" : "fresh"}
-                    onSubmit={(pin) => dispatch({ type: "enterPin", pin })}
-                  />
+                (!vaultUnlocked ? (
+                  <VaultKeypad playing={playing} onSubmit={handleVaultPinSubmit} />
                 ) : (
                   <div className={s.dossier}>
-                    <div className={s.dossierStamp}>GOVT OF WEST BENGAL — CONFIDENTIAL AUDIT</div>
+                    <div className={s.dossierStamp}>
+                      GOVT OF WEST BENGAL — CONFIDENTIAL FRAUD AUDIT
+                    </div>
                     <dl className={s.dossierGrid}>
                       <dt>Project</dt>
-                      <dd>SECTOR V URBAN CORRIDOR // TENDER #404</dd>
+                      <dd style={{ fontSize: 16 }}>SECTOR V URBAN CORRIDOR // TENDER #404</dd>
                       <dt>Flagged Shell Firm</dt>
-                      <dd>East-Bypass Infra Holdings</dd>
+                      <dd style={{ fontSize: 16 }}>East-Bypass Infra Holdings (₹80 Cr Fraud)</dd>
                       <dt>Encrypted Contractor ID</dt>
                       <dd className={s.contractorId}>{CONTRACTOR_ID}</dd>
-                      <dt>Liaison Desk</dt>
-                      <dd>Urban Dev. Dept, 4th Floor</dd>
                     </dl>
-                    {g.leads.lead3.status === "active" ? (
-                      <button
-                        type="button"
-                        className={f.forwardBtn}
-                        onClick={() =>
-                          handleForwardLead(
-                            "lead3",
-                            `Tender #404 Audit — Contractor ID ${CONTRACTOR_ID} (East-Bypass Infra Holdings)`
-                          )
-                        }
-                      >
-                        <span>↪ Forward Audit to Lalbazar Cyber Cell</span>
-                        <small>Triggers 4s exact SUV trace</small>
-                      </button>
-                    ) : (
+                    {passedTasks.includes(9) ? (
                       <div className={s.uploadedBox}>
-                        <div className={s.savedTag}>✅ FORWARDED TO LALBAZAR CYBER CELL</div>
-                        <button type="button" className={s.jumpMapBtn} onClick={() => openDockApp("map")}>
-                          OPEN CHOLOMAP WORKSPACE →
+                        <div className={s.savedTag} style={{ fontSize: 14 }}>
+                          ✅ MILESTONE 2/3 — FRAUD DOSSIER SENT TO LALBAZAR POLICE
+                        </div>
+                        <button
+                          type="button"
+                          className={s.jumpMapBtn}
+                          onClick={() => openDockApp("map")}
+                        >
+                          OPEN CHOLOMAP TO SAVE RIYA →
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <button
+                          type="button"
+                          className={cx(f.actionBtn, f.actionBtnDanger)}
+                          style={{ padding: "13px 16px", fontSize: 16 }}
+                          disabled={!playing}
+                          onClick={() => handleVaultTransmit(true)}
+                        >
+                          📡 TRANSMIT ALL FRAUD INFO TO LALBAZAR POLICE
+                        </button>
+                        <button
+                          type="button"
+                          className={f.actionBtn}
+                          style={{ opacity: 0.85 }}
+                          disabled={!playing}
+                          onClick={() => handleVaultTransmit(false)}
+                        >
+                          💾 Save Local Draft Only
                         </button>
                       </div>
                     )}
                   </div>
                 ))}
+
+              {/* 5 EXTRA LAPTOP APPS (Tasks 2, 3, 5, 6, 8) */}
+              {app === "gallery" && (
+                <GalleryApp
+                  taskNum={taskNum}
+                  playing={playing}
+                  onPassTask={onPassTask}
+                  onFailTask={onFailTask}
+                />
+              )}
+              {app === "calls" && (
+                <CallLogsApp
+                  taskNum={taskNum}
+                  playing={playing}
+                  onPassTask={onPassTask}
+                  onFailTask={onFailTask}
+                />
+              )}
+              {app === "browser" && (
+                <BrowserApp
+                  seed={seed}
+                  taskNum={taskNum}
+                  playing={playing}
+                  onPassTask={onPassTask}
+                  onFailTask={onFailTask}
+                />
+              )}
+              {app === "files" && (
+                <FilesApp
+                  taskNum={taskNum}
+                  playing={playing}
+                  onPassTask={onPassTask}
+                  onFailTask={onFailTask}
+                />
+              )}
+              {app === "settings" && (
+                <SettingsApp
+                  taskNum={taskNum}
+                  playing={playing}
+                  onPassTask={onPassTask}
+                  onFailTask={onFailTask}
+                />
+              )}
             </div>
           </section>
         )}
@@ -1049,44 +1115,52 @@ export default function FatherView({
 
       <footer className={f.dockWrap}>
         <nav className={f.dock} aria-label="Laptop Dock">
-          {[
-            ["pingme", badgePingMe ? "!" : null],
-            ["notes", badgeNotes ? "1" : null],
-            ["vault", badgeVault ? "1" : null],
-            ["map", badgeMap ? "●" : null],
-          ].map(([id, badge]) => (
-            <button
-              key={id}
-              type="button"
-              className={f.dockItem}
-              onClick={() => openDockApp(id)}
-              aria-label={GAME_APP_META[id].label}
-            >
-              <span className={f.dockTip}>
-                {id === "map" ? "CholoMap (Kolkata Workspace)" : GAME_APP_META[id].label}
-              </span>
-              <GameAppIcon id={id} size={46} />
-              {badge && <span className={f.dockBadge}>{badge}</span>}
-              {app === id && <span className={f.dockActiveDot} />}
-            </button>
-          ))}
+          {NINE_APP_IDS.map((id) => {
+            const isTarget = currentTask.app === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                className={cx(f.dockItem, isTarget && f.dockItemTarget)}
+                onClick={() => openDockApp(id)}
+                aria-label={GAME_APP_META[id].label}
+              >
+                <span className={f.dockTip}>
+                  {id === "map" ? "CholoMap (Kolkata Workspace)" : GAME_APP_META[id].label}
+                </span>
+                <GameAppIcon id={id} size={42} />
+                {isTarget && <span className={f.dockBadge}>!</span>}
+                {app === id && <span className={f.dockActiveDot} />}
+              </button>
+            );
+          })}
         </nav>
-
-        <div style={{ width: 210 }}>
-          <CdButton
-            small
-            icon="🛡️"
-            label={locked ? `CYBER LOCK (${secs(g.cyberLockUntil - now)})` : "CYBER LOCK"}
-            tone="blue"
-            cdLeft={lockCd}
-            cdTotal={CD.cyberLock}
-            readyText="5s FREEZE"
-            onClick={() => dispatch({ type: "cyberLock" })}
-          />
-        </div>
       </footer>
 
-      {popups}
+      {showGuide && (
+        <aside className={f.guideCard} aria-label="Wipeout rules">
+          <div className={f.guideCardHead}>
+            <span>WIPEOUT · INSPECTOR SUBIR SEN</span>
+            <button type="button" className={f.winCloseBtn} onClick={() => setShowGuide(false)}>
+              ✕
+            </button>
+          </div>
+          <ul className={f.guideList}>
+            <li>
+              <b>10 Tasks, 15s Each:</b> Complete every lead one by one before the 15.0s timer runs
+              out.
+            </li>
+            <li>
+              <b>Zero Margin for Error:</b> Any wrong action or timeout restarts from scratch (as
+              Subir or Rohan).
+            </li>
+            <li>
+              <b>Final /3 Score:</b> Task 8 stops Remote Delete (1/3), Task 9 sends Fraud Info to
+              Police (2/3), Task 10 frees Riya on CholoMap (3/3).
+            </li>
+          </ul>
+        </aside>
+      )}
     </div>
   );
 }

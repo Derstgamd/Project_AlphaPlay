@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { ADJ, EDGES, ZONES, ZONE_IDS } from "../constants";
 import { traceActive } from "../engine";
+import { sfx } from "../sfx";
 import m from "./MapBoard.module.css";
 
 // Real Kolkata (Bidhannagar / Salt Lake / EM Bypass / VIP Rd) coordinates
@@ -150,6 +151,10 @@ export default function MapBoard({
         .map((p) => `${p.zone}:${p.result}`)
         .join(",")
     : "";
+  const roadblockKey =
+    g.roadblock && now < g.roadblock.expiresAt
+      ? `${g.roadblock.a}:${g.roadblock.b}`
+      : "";
 
   useEffect(() => {
     if (!mapReady || !leafletRef.current || !layerRef.current) return;
@@ -158,6 +163,7 @@ export default function MapBoard({
     layer.clearLayers();
 
     const reachable = !isF && g.suvZone ? new Set(ADJ[g.suvZone] || []) : new Set();
+    const [rbA, rbB] = roadblockKey ? roadblockKey.split(":") : [null, null];
     const latestPing = {};
     if (isF && activePingsKey) {
       activePingsKey.split(",").forEach((entry) => {
@@ -172,13 +178,26 @@ export default function MapBoard({
       const ca = ZONE_COORDS[a];
       const cb = ZONE_COORDS[b];
       if (!ca || !cb) return;
-      const hot = !isF && (a === g.suvZone || b === g.suvZone);
+      const isBlocked =
+        rbA && rbB && ((a === rbA && b === rbB) || (a === rbB && b === rbA));
+      const hot = !isF && !isBlocked && (a === g.suvZone || b === g.suvZone);
       L.polyline([ca, cb], {
-        color: hot ? "#22c55e" : "#94a3b8",
-        weight: hot ? 2.6 : 1.5,
-        opacity: hot ? 0.85 : 0.35,
-        dashArray: hot ? undefined : "5 6",
+        color: isBlocked ? "#ef4444" : hot ? "#22c55e" : "#94a3b8",
+        weight: isBlocked ? 4 : hot ? 2.8 : 1.5,
+        opacity: isBlocked ? 0.92 : hot ? 0.85 : 0.35,
+        dashArray: isBlocked ? "7 6" : hot ? undefined : "5 6",
       }).addTo(layer);
+
+      if (isBlocked) {
+        const mid = [(ca[0] + cb[0]) / 2, (ca[1] + cb[1]) / 2];
+        const rbIcon = L.divIcon({
+          className: m.pinIconWrap,
+          html: `<span class="${m.pinStatus} ${m.stStrong}" style="position:static;display:inline-block;">🚧 PCR BARRICADE</span>`,
+          iconSize: [110, 20],
+          iconAnchor: [55, 10],
+        });
+        L.marker(mid, { icon: rbIcon, interactive: false }).addTo(layer);
+      }
     });
 
     // 2. Last-known-location red yarn trail (chronological pings with signal for Father)
@@ -226,7 +245,12 @@ export default function MapBoard({
       const cleared = g.clearedZones.includes(id);
       const ping = latestPing[id];
       const here = !isF && g.suvZone === id;
-      const canGo = !isF && reachable.has(id) && mode === "reroute";
+      const isBarricadedDest =
+        !isF &&
+        rbA &&
+        rbB &&
+        ((rbA === g.suvZone && rbB === id) || (rbB === g.suvZone && rbA === id));
+      const canGo = !isF && reachable.has(id) && mode === "reroute" && !isBarricadedDest;
       const isGhost = ghostZone === id;
       const vanHere = isF && g.raidInFlight?.zone === id;
       const missed = g.raids.some((r) => r.zone === id);
@@ -238,7 +262,11 @@ export default function MapBoard({
       let base = "#b91c1c";
       let dark = "#691212";
       let hi = "#fca5a5";
-      if (here || canGo) {
+      if (isBarricadedDest) {
+        base = "#dc2626";
+        dark = "#7f1d1d";
+        hi = "#fca5a5";
+      } else if (here || canGo) {
         base = "#16a34a";
         dark = "#14532d";
         hi = "#86efac";
@@ -263,6 +291,8 @@ export default function MapBoard({
       // Status ribbon above pin
       let badgeHtml = "";
       if (isTrace) badgeHtml = `<span class="${m.pinStatus} ${m.stStrong}">🎯 SUV LIVE</span>`;
+      else if (isBarricadedDest)
+        badgeHtml = `<span class="${m.pinStatus} ${m.stStrong}">🚧 BLOCKED</span>`;
       else if (vanHere) badgeHtml = `<span class="${m.pinStatus} ${m.stVan}">🚓 PCR EN ROUTE</span>`;
       else if (here) badgeHtml = `<span class="${m.pinStatus} ${m.stSuv}">🚙 SUV HERE</span>`;
       else if (isGhost) badgeHtml = `<span class="${m.pinStatus} ${m.stGhost}">👻 GHOST</span>`;
@@ -360,6 +390,7 @@ export default function MapBoard({
     ghostZone,
     recentBlipsKey,
     activePingsKey,
+    roadblockKey,
     selected,
     mode,
     customPins,
@@ -389,7 +420,10 @@ export default function MapBoard({
           <button
             type="button"
             className={m.recenterBtn}
-            onClick={() => mapRef.current?.setView(MAP_CENTER, 13, { animate: true })}
+            onClick={() => {
+              sfx.radarPing();
+              mapRef.current?.setView(MAP_CENTER, 13, { animate: true });
+            }}
           >
             Recenter
           </button>

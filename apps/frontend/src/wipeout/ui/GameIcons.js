@@ -17,11 +17,39 @@ export const GAME_APP_META = {
     label: "CholoMap",
     color: "linear-gradient(135deg,#14b8a6,#0f766e)",
   },
+  gallery: {
+    label: "Gallery",
+    color: "linear-gradient(135deg,#fb7185,#be123c)",
+  },
+  calls: {
+    label: "Call Logs",
+    color: "linear-gradient(135deg,#10b981,#047857)",
+  },
+  browser: {
+    label: "Browser",
+    color: "linear-gradient(135deg,#38bdf8,#1d4ed8)",
+  },
+  files: {
+    label: "Files",
+    color: "linear-gradient(135deg,#60a5fa,#1e40af)",
+  },
   settings: {
-    label: "Settings",
-    color: "linear-gradient(135deg,#475569,#1e293b)",
+    label: "System",
+    color: "linear-gradient(135deg,#64748b,#334155)",
   },
 };
+
+export const NINE_APP_IDS = [
+  "pingme",
+  "notes",
+  "vault",
+  "map",
+  "gallery",
+  "calls",
+  "browser",
+  "files",
+  "settings",
+];
 
 const GLYPHS = {
   pingme: <path d="M4 5h16v11H9l-5 4z" />,
@@ -43,6 +71,23 @@ const GLYPHS = {
       <path d="M9 4v14M15 6v14" />
     </>
   ),
+  gallery: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="10" r="1.8" />
+      <path d="M3 17l5-5 4 4 3-3 6 6" />
+    </>
+  ),
+  calls: (
+    <path d="M6.5 4h3l1.5 4-2 1.5a11 11 0 005.5 5.5L16 13l4 1.5v3a2 2 0 01-2 2A14 14 0 014.5 6a2 2 0 012-2z" />
+  ),
+  browser: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" />
+    </>
+  ),
+  files: <path d="M3 7h6l2 2h10v10H3z" />,
   settings: (
     <>
       <circle cx="12" cy="12" r="3.2" />

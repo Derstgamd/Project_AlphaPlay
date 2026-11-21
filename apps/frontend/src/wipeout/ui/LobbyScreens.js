@@ -29,7 +29,7 @@ function ClipboardFrame({ pageKey, children }) {
   );
 }
 
-export function LandingScreen({ ctl }) {
+export function LandingScreen({ ctl, dualScores, muted, onToggleMute, onStartSolo }) {
   const [page, setPage] = useState("roles"); // "roles" (Page 1) | "join" (Page 2)
   const [code, setCode] = useState("");
   const [err, setErr] = useState("");
@@ -43,7 +43,7 @@ export function LandingScreen({ ctl }) {
       return;
     }
     sfx.unlock();
-    sfx.tap();
+    sfx.stamp();
     ctl.join(clean);
   }
 
@@ -55,29 +55,36 @@ export function LandingScreen({ ctl }) {
             type="button"
             className={c.flipBackBtn}
             onClick={() => {
-              sfx.tap();
+              sfx.unlock();
+              sfx.paperFlip();
               setPage("roles");
             }}
           >
-            ← Page 1: Roles
+            ← Page 1: Wipeout POVs
           </button>
-          <span className={c.pageNum}>SHEET 02 / 02</span>
+          <div className={c.sheetTopRight}>
+            <button type="button" className={c.audioStampBtn} onClick={onToggleMute}>
+              {muted ? "🔇 MUTED" : "🔊 AUDIO"}
+            </button>
+            <span className={c.pageNum}>SHEET 02 / 02</span>
+          </div>
         </div>
 
         <div className={c.heroBlock}>
           <div className={c.titleRow}>
             <h1 className={c.title}>
-              JOIN <span className={c.titleWipe}>DISPATCH</span>
+              WIPEOUT <span className={c.titleWipe}>2-DEVICE</span>
             </h1>
-            <span className={c.rubberStamp}>2ND DEVICE</span>
+            <span className={c.rubberStamp}>OPTIONAL SYNC</span>
           </div>
           <p className={c.storyNote}>
-            Enter the 4-digit room code from the host clipboard, or run a solo test match against the bot.
+            Pair two devices to play Subir &amp; Rohan side-by-side, or join an existing 4-digit
+            dispatch room.
           </p>
         </div>
 
         <form className={c.paperBlock} onSubmit={submitJoin}>
-          <div className={c.inkSection}>JOIN ON A SECOND PHONE</div>
+          <div className={c.inkSection}>JOIN WITH 4-DIGIT ROOM CODE</div>
           <div className={c.joinRow}>
             <input
               type="text"
@@ -90,6 +97,7 @@ export function LandingScreen({ ctl }) {
               value={code}
               onChange={(e) => {
                 setErr("");
+                sfx.keyPress();
                 setCode(e.target.value.replace(/\D/g, "").slice(0, 4));
               }}
             />
@@ -101,29 +109,29 @@ export function LandingScreen({ ctl }) {
         </form>
 
         <div className={c.paperBlock}>
-          <div className={c.inkSection}>SOLO / JUDGE TESTING</div>
+          <div className={c.inkSection}>HOST A 2-DEVICE ROOM</div>
           <div className={c.soloRow}>
             <button
               type="button"
               className={c.inkBtn}
               onClick={() => {
                 sfx.unlock();
-                sfx.tap();
-                ctl.playBot("father");
+                sfx.stamp();
+                ctl.hostOnline("father");
               }}
             >
-              Father vs. Bot
+              Host as Subir
             </button>
             <button
               type="button"
               className={c.inkBtn}
               onClick={() => {
                 sfx.unlock();
-                sfx.tap();
-                ctl.playBot("rohan");
+                sfx.stamp();
+                ctl.hostOnline("rohan");
               }}
             >
-              Rohan vs. Bot
+              Host as Rohan
             </button>
           </div>
         </div>
@@ -134,11 +142,12 @@ export function LandingScreen({ ctl }) {
             type="button"
             className={c.nextPageBtn}
             onClick={() => {
-              sfx.tap();
+              sfx.unlock();
+              sfx.paperFlip();
               setPage("roles");
             }}
           >
-            ← Back to Roles
+            ← Back to POVs
           </button>
         </div>
       </ClipboardFrame>
@@ -148,39 +157,59 @@ export function LandingScreen({ ctl }) {
   return (
     <ClipboardFrame pageKey="landing-page-1">
       <div className={c.sheetTop}>
-        <span className={c.formStamp}>KOLKATA · 20 NOV 2026</span>
-        <span className={c.pageNum}>SHEET 01 / 02</span>
+        <span className={c.formStamp}>KOLKATA CASE FILE · TENDER #404</span>
+        <div className={c.sheetTopRight}>
+          <button type="button" className={c.audioStampBtn} onClick={onToggleMute}>
+            {muted ? "🔇 MUTED" : "🔊 AUDIO"}
+          </button>
+          <span className={c.pageNum}>SHEET 01 / 02</span>
+        </div>
       </div>
 
       <div className={c.heroBlock}>
         <div className={c.titleRow}>
           <h1 className={c.title}>
-            8:15 PM <span className={c.titleWipe}>{"//"} WIPEOUT</span>
+            <span className={c.titleWipe}>WIPEOUT</span>
           </h1>
-          <span className={c.rubberStamp}>03:00 ROUND</span>
+          <span className={c.rubberStamp}>10 TASKS · 15s EACH</span>
         </div>
         <p className={c.storyNote}>
-          Riya stepped out for a quick walk and left her phone on the table. Suddenly, it starts wiping itself.
+          Riya&apos;s laptop is wiping Tender #404. Beat all 10 rapid-fire tasks one by one from
+          both perspectives to score 3/3 on each end!
         </p>
       </div>
 
+      <div className={c.dualScoreBar} aria-label="Dual POV scores">
+        <div className={`${c.dualScoreCell} ${c.dualScoreFather}`}>
+          <span>SUBIR POV</span>
+          <b>{dualScores.fatherBest} / 3</b>
+        </div>
+        <div className={`${c.dualScoreCell} ${c.dualScoreRohan}`}>
+          <span>ROHAN POV</span>
+          <b>{dualScores.rohanBest} / 3</b>
+        </div>
+      </div>
+
       <div className={c.roleList}>
-        <div className={c.inkSection}>HOST A 2-PHONE MATCH — CHECK ASSIGNMENT</div>
+        <div className={c.inkSection}>CHOOSE YOUR PERSPECTIVE — START IMMEDIATELY</div>
 
         <button
           type="button"
           className={`${c.rolePaperBtn} ${c.rolePaperFather}`}
           onClick={() => {
             sfx.unlock();
-            sfx.tap();
-            ctl.hostOnline("father");
+            sfx.stamp();
+            onStartSolo("father");
           }}
         >
           <span className={c.checkbox} aria-hidden="true">✓</span>
           <span className={c.roleCopy}>
-            <span className={c.roleTagFather}>PLAYER 1 · GOOD</span>
-            <span className={c.roleTitle}>Play as Father</span>
-            <span className={c.roleSub}>Inspector Subir Sen — Riya&apos;s Phone</span>
+            <span className={c.roleTagFather}>SUBIR POV · 15s STRICT CUTOFF</span>
+            <span className={c.roleTitle}>Play as Subir (Father)</span>
+            <span className={c.roleSub}>
+              10 tasks on Riya&apos;s laptop &amp; CholoMap — Stop Delete → Send Fraud Info → Free
+              Riya
+            </span>
           </span>
         </button>
 
@@ -189,41 +218,44 @@ export function LandingScreen({ ctl }) {
           className={`${c.rolePaperBtn} ${c.rolePaperRohan}`}
           onClick={() => {
             sfx.unlock();
-            sfx.tap();
-            ctl.hostOnline("rohan");
+            sfx.stamp();
+            onStartSolo("rohan");
           }}
         >
           <span className={c.checkbox} aria-hidden="true">✓</span>
           <span className={c.roleCopy}>
-            <span className={c.roleTagRohan}>PLAYER 2 · TRAITOR</span>
+            <span className={c.roleTagRohan}>ROHAN POV · FAIL STARTS AT TASK 8</span>
             <span className={c.roleTitle}>Play as Rohan</span>
-            <span className={c.roleSub}>Back Seat of Getaway SUV — Remote Attack</span>
+            <span className={c.roleSub}>
+              10 complementary tasks — Lock Delete → Cut Police Uplink → Escape Kolkata
+            </span>
           </span>
         </button>
       </div>
 
       <div className={c.quickFoot}>
-        <span>Have a room code or testing solo?</span>
+        <span>Playing on two devices or have a room code?</span>
       </div>
 
       <div className={c.flipBar}>
-        <span className={c.footCaption}>2-PLAYER ASYMMETRIC THRILLER</span>
+        <span className={c.footCaption}>DUAL POV SCORE: {dualScores.fatherBest + dualScores.rohanBest} / 6</span>
         <button
           type="button"
           className={c.nextPageBtn}
           onClick={() => {
-            sfx.tap();
+            sfx.unlock();
+            sfx.paperFlip();
             setPage("join");
           }}
         >
-          Join / Solo · Next Page →
+          2-Device / Join →
         </button>
       </div>
     </ClipboardFrame>
   );
 }
 
-export function PairingScreen({ ctl, snap }) {
+export function PairingScreen({ ctl, snap, muted, onToggleMute, onStartSolo }) {
   const { roomCode, game, link } = snap;
   const hostRole = game?.roles.host || "father";
   const [lanInfo, setLanInfo] = useState({ ips: [], port: "" });
@@ -284,18 +316,30 @@ export function PairingScreen({ ctl, snap }) {
   return (
     <ClipboardFrame pageKey={`pairing-${roomCode}`}>
       <div className={c.sheetTop}>
-        <button type="button" className={c.flipBackBtn} onClick={ctl.leave}>
+        <button
+          type="button"
+          className={c.flipBackBtn}
+          onClick={() => {
+            sfx.paperFlip();
+            ctl.leave();
+          }}
+        >
           ← Flip back
         </button>
-        <span className={c.relayPill}>
-          {link.kind === "supabase" ? "SUPABASE" : "LOCAL RELAY"} ·{" "}
-          {link.status === "open" ? "LIVE" : link.status.toUpperCase()}
-        </span>
+        <div className={c.sheetTopRight}>
+          <button type="button" className={c.audioStampBtn} onClick={onToggleMute}>
+            {muted ? "🔇 MUTED" : "🔊 AUDIO"}
+          </button>
+          <span className={c.relayPill}>
+            {link.kind === "supabase" ? "SUPABASE" : "LOCAL RELAY"} ·{" "}
+            {link.status === "open" ? "LIVE" : link.status.toUpperCase()}
+          </span>
+        </div>
       </div>
 
       <div className={c.pairCenter}>
         <div className={c.roleBanner}>
-          YOU ARE {hostRole === "father" ? "INSPECTOR SUBIR SEN (FATHER)" : "ROHAN CHATTERJEE (TRAITOR)"}
+          WIPEOUT · {hostRole === "father" ? "INSPECTOR SUBIR SEN" : "ROHAN CHATTERJEE"}
         </div>
 
         <div className={c.codeStampBox}>
@@ -314,7 +358,7 @@ export function PairingScreen({ ctl, snap }) {
         </div>
 
         <p className={c.pairHint}>
-          Scan on a second phone or enter <b>{roomCode}</b>. No sign-up required.
+          Scan on a second device or enter <b>{roomCode}</b>.
         </p>
 
         {joinLink && (
@@ -335,37 +379,50 @@ export function PairingScreen({ ctl, snap }) {
         )}
 
         <div className={c.waitRow}>
-          <span className={c.waitDot} /> Waiting for Player 2 ({hostRole === "father" ? "Rohan" : "Father"}) to join…
+          <span className={c.waitDot} /> Waiting for Player 2 ({hostRole === "father" ? "Rohan" : "Subir"})…
         </div>
         {link.error && <div className={c.inlineErr}>{link.error}</div>}
       </div>
 
       <div className={c.botFootRow}>
-        <span>Testing solo?</span>
+        <span>Don&apos;t want to wait?</span>
         <button
           type="button"
           className={c.botStampBtn}
           onClick={() => {
             sfx.unlock();
-            sfx.tap();
-            ctl.playBot(hostRole);
+            sfx.stamp();
+            ctl.leave();
+            onStartSolo(hostRole);
           }}
         >
-          PLAY VS. BOT
+          PLAY NOW
         </button>
       </div>
     </ClipboardFrame>
   );
 }
 
-export function JoiningScreen({ ctl, snap }) {
+export function JoiningScreen({ ctl, snap, muted, onToggleMute }) {
   return (
     <ClipboardFrame pageKey={`joining-${snap.roomCode}`}>
       <div className={c.sheetTop}>
-        <button type="button" className={c.flipBackBtn} onClick={ctl.leave}>
+        <button
+          type="button"
+          className={c.flipBackBtn}
+          onClick={() => {
+            sfx.paperFlip();
+            ctl.leave();
+          }}
+        >
           ← Cancel
         </button>
-        <span className={c.pageNum}>SHEET 02 · SYNC</span>
+        <div className={c.sheetTopRight}>
+          <button type="button" className={c.audioStampBtn} onClick={onToggleMute}>
+            {muted ? "🔇 MUTED" : "🔊 AUDIO"}
+          </button>
+          <span className={c.pageNum}>SHEET 02 · SYNC</span>
+        </div>
       </div>
 
       <div className={c.pairCenter} style={{ margin: "auto 0" }}>
