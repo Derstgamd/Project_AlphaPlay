@@ -1,5 +1,5 @@
-import GameRoot from "@/components/GameRoot";
+import WipeoutApp from "@/wipeout/ui/WipeoutApp";
 
 export default function Home() {
-  return <GameRoot />;
+  return <WipeoutApp />;
 }
