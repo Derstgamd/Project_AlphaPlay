@@ -1,0 +1,410 @@
+.tableSurface {
+  position: relative;
+  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
+  background-color: #16110e;
+  background-image: url("/desk-wood.jpg");
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  display: flex;
+}
+
+.tableVignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: radial-gradient(
+    ellipse at 42% 48%,
+    rgba(255, 240, 210, 0.03) 0%,
+    rgba(8, 6, 5, 0.52) 72%,
+    rgba(4, 3, 3, 0.82) 100%
+  );
+}
+
+.tableLayout {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 24px;
+  padding: 22px 54px 22px 24px;
+  align-items: stretch;
+}
+
+.tableTools {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+/* Small Matte Digital Desk Clock */
+.digitalClock {
+  align-self: flex-end;
+  padding: 6px 8px;
+  border-radius: 5px;
+  background: linear-gradient(170deg, #1d1e22 0%, #101114 100%);
+  transform: rotate(-0.8deg);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.8),
+    0 3px 6px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.clockFace {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 3px;
+  background: #08090b;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.95);
+}
+
+.clockDigits {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #dc2626;
+  text-shadow: 0 0 10px rgba(220, 38, 38, 0.55);
+  line-height: 1;
+}
+
+.clockColon {
+  animation: blinkColon 1.6s steps(1) infinite;
+}
+
+@keyframes blinkColon {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.clockMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: rgba(220, 38, 38, 0.65);
+  line-height: 1;
+}
+
+/* Loose Physical Pushpins & Yarn Ball lying directly on the bare wood table */
+.loosePropsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px;
+}
+
+.looseObject {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  outline: none;
+}
+
+.looseObject:hover {
+  transform: translateY(-3px) scale(1.04);
+  filter: brightness(1.1);
+}
+
+.looseObjectHeld {
+  transform: translateY(-1px);
+}
+
+.looseObjectPicked {
+  transform: translateY(-6px) scale(1.08);
+  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.85)) brightness(1.12);
+}
+
+.loosePinsSvg {
+  width: 152px;
+  height: 90px;
+  display: block;
+  overflow: visible;
+}
+
+.looseYarnSvg {
+  width: 112px;
+  height: 92px;
+  display: block;
+  overflow: visible;
+}
+
+.yarnSpotWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.undoYarnBtn {
+  margin-top: -6px;
+  background: none;
+  border: none;
+  color: rgba(196, 184, 168, 0.55);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.undoYarnBtn:hover {
+  color: #fca5a5;
+  text-decoration: underline;
+}
+
+/* Physical Spiral Field Notebook lying directly on the table */
+.notebookWrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  transform: rotate(-1.3deg);
+  filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.78));
+}
+
+.notebookRings {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 18px;
+  height: 10px;
+  z-index: 2;
+}
+
+.ring {
+  width: 10px;
+  height: 16px;
+  border: 2px solid #59554e;
+  border-radius: 999px;
+  background: #14100d;
+}
+
+.notebookPaper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #dfd7c4;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 28px,
+      rgba(185, 28, 28, 0.28) 28px,
+      rgba(185, 28, 28, 0.28) 29px,
+      transparent 29px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 25px,
+      rgba(45, 50, 60, 0.15) 25px,
+      rgba(45, 50, 60, 0.15) 26px
+    );
+  border-radius: 3px 3px 5px 5px;
+  padding: 16px 14px 12px 36px;
+  color: #1f2228;
+  box-shadow: inset 0 8px 18px rgba(0, 0, 0, 0.15);
+}
+
+.notebookTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.notebookPinPreview {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5c5446;
+}
+
+.notebookPinPreview i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid #1f2228;
+}
+
+.clearNoteBtn {
+  background: none;
+  border: none;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9px;
+  color: #7f1d1d;
+  cursor: pointer;
+}
+
+.clearNoteBtn:hover {
+  text-decoration: underline;
+}
+
+.notebookTitleInput {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(31, 34, 40, 0.2);
+  padding: 4px 0 6px;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 24px;
+  font-weight: 700;
+  color: #181a1f;
+  margin-bottom: 6px;
+}
+
+.notebookTitleInput::placeholder {
+  color: #7d7566;
+}
+
+.notebookTitleInput:focus {
+  outline: none;
+  border-bottom-color: #991b1b;
+}
+
+.notebookTextarea {
+  flex: 1;
+  min-height: 110px;
+  width: 100%;
+  resize: none;
+  background: transparent;
+  border: none;
+  padding: 2px 0;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 20px;
+  line-height: 26px;
+  color: #24272e;
+}
+
+.notebookTextarea::placeholder {
+  color: #827a6a;
+}
+
+.notebookTextarea:focus {
+  outline: none;
+}
+
+.notebookFooter {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(31, 34, 40, 0.2);
+}
+
+.attachBtn {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 3px;
+  border: none;
+  background: #1c1917;
+  color: #f3efe6;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.attachBtn:hover:not(:disabled) {
+  background: #991b1b;
+}
+
+.attachBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.attachBtnArmed {
+  background: #991b1b;
+  color: #fecaca;
+}
+
+/* Right-edge Chevron to pan over to Adam's Laptop / Phone */
+.deviceChevron {
+  position: fixed;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 460;
+  width: 38px;
+  height: 84px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(14, 12, 11, 0.45);
+  color: rgba(235, 228, 214, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.deviceChevron:hover {
+  background: rgba(14, 12, 11, 0.85);
+  color: #f8f4ec;
+  transform: translateY(-50%) translateX(2px);
+}
+
+.chevronDot {
+  position: absolute;
+  top: 16px;
+  right: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #dc2626;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.85);
+}
+
+.chevronTooltip {
+  position: absolute;
+  right: calc(100% + 8px);
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 3px;
+  background: rgba(14, 12, 11, 0.92);
+  color: #e7e0d2;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.deviceChevron:hover .chevronTooltip {
+  opacity: 1;
+}
+
+@media (max-width: 960px) {
+  .tableSurface {
+    height: auto;
+    overflow: visible;
+  }
+
+  .tableLayout {
+    grid-template-columns: 1fr;
+    padding: 14px 42px 18px 14px;
+    gap: 18px;
+  }
+
+  .notebookPaper {
+    min-height: 240px;
+  }
+}

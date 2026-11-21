@@ -1,0 +1,214 @@
+.backdrop {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: radial-gradient(ellipse at 50% 0%, #17223a, #090c12 70%);
+  color: #f3f4f6;
+}
+
+.topControls {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ctrlBtn {
+  padding: 6px 11px;
+  background: #171e2b;
+  border: 1px solid #2b3547;
+  border-radius: 8px;
+  color: #e5e7eb;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ctrlBtn:hover {
+  background: #222c3f;
+}
+
+.hostTag {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.frame {
+  width: 100%;
+  max-width: 390px;
+  height: min(780px, calc(100vh - 70px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 25% 15%, rgba(70, 120, 210, 0.38), transparent 55%),
+    radial-gradient(circle at 80% 85%, rgba(150, 70, 170, 0.3), transparent 55%),
+    #0e131d;
+  border: 7px solid #232a3a;
+  border-radius: 38px;
+  box-shadow:
+    0 28px 64px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.statusBar {
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(8, 11, 17, 0.4);
+}
+
+.notch {
+  width: 74px;
+  height: 18px;
+  background: #05070a;
+  border-radius: 999px;
+}
+
+.statusRight {
+  font-size: 10px;
+  color: #cbd5e1;
+}
+
+.appHost {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.home {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 16px 10px;
+}
+
+.widget {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.widgetTime {
+  font-size: 40px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+
+.widgetSub {
+  font-size: 12px;
+  color: #bcd0f2;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px 6px;
+  margin-top: 26px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #f3f4f6;
+  font-size: 11px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+}
+
+.tile:active,
+.dockTile:active {
+  transform: scale(0.92);
+}
+
+.dock {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 6px;
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 26px;
+  backdrop-filter: blur(12px);
+}
+
+.dockTile {
+  position: relative;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: 6px;
+  min-width: 19px;
+  height: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  background: #ef4444;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.homeBarWrap {
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 11, 17, 0.5);
+}
+
+.homeBar {
+  width: 112px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.4);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .backdrop {
+    padding: 0;
+    gap: 0;
+  }
+
+  .topControls {
+    max-width: 100%;
+    padding: 8px 12px;
+  }
+
+  .frame {
+    max-width: 100%;
+    height: calc(100vh - 46px);
+    border: none;
+    border-radius: 0;
+  }
+}

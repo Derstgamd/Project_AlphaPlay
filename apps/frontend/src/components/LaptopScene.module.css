@@ -1,0 +1,282 @@
+.desktop {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #f3f4f6;
+  background:
+    radial-gradient(ellipse at 20% 15%, rgba(56, 112, 190, 0.32), transparent 55%),
+    radial-gradient(ellipse at 85% 85%, rgba(110, 60, 160, 0.26), transparent 55%),
+    linear-gradient(160deg, #0d1626, #080b12);
+}
+
+.menubar {
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  background: rgba(10, 14, 22, 0.82);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  z-index: 5000;
+}
+
+.menuLeft,
+.menuRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.menuMeta {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  color: #aab4c5;
+}
+
+.menuBtn {
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.menuBtn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.deskArea {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.icons {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1;
+}
+
+.fileIcon {
+  width: 86px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 2px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #e5e7eb;
+  font-size: 11px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+}
+
+.fileIcon:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.glyph {
+  width: 44px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #e5e7eb, #9ca3af);
+  clip-path: polygon(0 0, 70% 0, 100% 25%, 100% 100%, 0 100%);
+  color: #1f2937;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(203, 213, 225, 0.5);
+  pointer-events: none;
+}
+
+/* Windows */
+.window {
+  position: absolute;
+  max-width: calc(100% - 8px);
+  max-height: calc(100% - 8px);
+  flex-direction: column;
+  overflow: hidden;
+  background: #10151f;
+  border: 1px solid #2c3546;
+  border-radius: 11px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+  opacity: 0.94;
+}
+
+.windowFocus {
+  opacity: 1;
+  border-color: #3d4a63;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.7);
+}
+
+.windowMax {
+  border-radius: 0;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.titlebar {
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: #1c2433;
+  border-bottom: 1px solid #2c3546;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.titlebar:active {
+  cursor: grabbing;
+}
+
+.lights {
+  display: flex;
+  gap: 7px;
+  width: 54px;
+}
+
+.close,
+.minimize,
+.maximize {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.close {
+  background: #ef4444;
+}
+
+.minimize {
+  background: #f59e0b;
+}
+
+.maximize {
+  background: #10b981;
+}
+
+.winTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.lightsSpacer {
+  width: 54px;
+}
+
+.winBody {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Dock */
+.dockWrap {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: 8px 12px 12px;
+  z-index: 5000;
+}
+
+.dock {
+  display: flex;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(18, 24, 36, 0.78);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+}
+
+.dockItem {
+  position: relative;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.dockItem:hover {
+  transform: translateY(-8px) scale(1.18);
+}
+
+.tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 9px;
+  background: rgba(8, 10, 14, 0.92);
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.dockItem:hover .tip {
+  opacity: 1;
+}
+
+.dockBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  background: #ef4444;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.runDot {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 4px;
+  height: 4px;
+  transform: translateX(-50%);
+  background: #e5e7eb;
+  border-radius: 50%;
+}
