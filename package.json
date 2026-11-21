@@ -1,0 +1,7 @@
+{
+  "name": "project-alphaplay",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ]
+}
