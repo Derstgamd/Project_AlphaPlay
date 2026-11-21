@@ -1,11 +1,63 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CASE_BRIEF } from "@/data/caseData";
 import { useCase } from "@/context/CaseContext";
+import { useAmbience } from "@/hooks/useAmbience";
+import { PortraitArt } from "./BoardArtwork";
 import KolkataMap from "./workspace/KolkataMap";
+import DetectiveBoard from "./workspace/DetectiveBoard";
+import Deskscape from "./workspace/Deskscape";
+import { CaseFileModal, InspectModal } from "./workspace/WorkspaceModals";
 import styles from "./WorkspaceScreen.module.css";
 
 const START_MINUTES = 2 * 60 + 14; // 02:14 AM
+
+const WALL_POLAROIDS = [
+  {
+    id: "adam",
+    side: "left",
+    title: "Adam",
+    role: "Missing Person · Case #04",
+    details: CASE_BRIEF.summary,
+    variant: "adam",
+    rot: "-3deg",
+    clueId: "clue_ping",
+  },
+  {
+    id: "rohan",
+    side: "left",
+    title: "Rohan",
+    role: "Roommate & Co-Host",
+    details:
+      "Claimed he stayed home, but his messages on Adam's device tell a different story.",
+    variant: "rohan",
+    rot: "2.5deg",
+    clueId: "clue_rohan_meet",
+  },
+  {
+    id: "unknown",
+    side: "right",
+    title: "Unknown",
+    role: "Burner Contact (404)",
+    details:
+      "Sent Adam a threat 12 minutes before the North Platform blackout. Identity unconfirmed.",
+    variant: "unknown",
+    rot: "-2deg",
+    clueId: null,
+  },
+  {
+    id: "kabir",
+    side: "right",
+    title: "Insp. Kabir",
+    role: "Case Handler",
+    details:
+      "Mounted Adam's synced devices to your desk. Waiting for confirmation on the hidden drive.",
+    variant: "kabir",
+    rot: "3deg",
+    clueId: null,
+  },
+];
 
 function formatGameClock(totalMinutes) {
   const m = totalMinutes % (12 * 60);
@@ -14,141 +66,10 @@ function formatGameClock(totalMinutes) {
   return { hh, mm };
 }
 
-function PinBundleArt() {
-  return (
-    <svg viewBox="0 0 150 90" className={styles.loosePinsSvg} aria-hidden="true">
-      <defs>
-        <filter id="tableShadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="2.6" />
-        </filter>
-        <radialGradient id="redCap" cx="35%" cy="30%" r="65%">
-          <stop offset="0%" stopColor="#ef4444" />
-          <stop offset="45%" stopColor="#991b1b" />
-          <stop offset="100%" stopColor="#450a0a" />
-        </radialGradient>
-        <radialGradient id="amberCap" cx="35%" cy="30%" r="65%">
-          <stop offset="0%" stopColor="#f59e0b" />
-          <stop offset="50%" stopColor="#92400e" />
-          <stop offset="100%" stopColor="#451a03" />
-        </radialGradient>
-        <radialGradient id="ivoryCap" cx="35%" cy="30%" r="65%">
-          <stop offset="0%" stopColor="#faf7f0" />
-          <stop offset="55%" stopColor="#c7bfb0" />
-          <stop offset="100%" stopColor="#57534e" />
-        </radialGradient>
-      </defs>
-
-      {/* Soft cast shadows directly on the bare wood table */}
-      <g filter="url(#tableShadow)" opacity="0.72">
-        <ellipse cx="42" cy="54" rx="16" ry="7" transform="rotate(-14 42 54)" fill="#000" />
-        <ellipse cx="76" cy="46" rx="18" ry="8" transform="rotate(10 76 46)" fill="#000" />
-        <ellipse cx="106" cy="60" rx="16" ry="7" transform="rotate(-8 106 60)" fill="#000" />
-        <ellipse cx="64" cy="68" rx="14" ry="6" transform="rotate(18 64 68)" fill="#000" />
-        <ellipse cx="96" cy="36" rx="14" ry="6" transform="rotate(-20 96 36)" fill="#000" />
-      </g>
-
-      {/* Steel needles resting on wood */}
-      <line x1="34" y1="44" x2="14" y2="57" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" />
-      <line x1="34" y1="43.5" x2="14" y2="56.5" stroke="#cbd5e1" strokeWidth="0.9" strokeLinecap="round" />
-
-      <line x1="72" y1="36" x2="86" y2="16" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" />
-      <line x1="72" y1="35.5" x2="86" y2="15.5" stroke="#cbd5e1" strokeWidth="0.9" strokeLinecap="round" />
-
-      <line x1="108" y1="52" x2="132" y2="44" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" />
-      <line x1="108" y1="51.5" x2="132" y2="43.5" stroke="#cbd5e1" strokeWidth="0.9" strokeLinecap="round" />
-
-      <line x1="60" y1="62" x2="43" y2="76" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
-      <line x1="60" y1="61.5" x2="43" y2="75.5" stroke="#cbd5e1" strokeWidth="0.8" strokeLinecap="round" />
-
-      <line x1="94" y1="31" x2="115" y2="23" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
-      <line x1="94" y1="30.5" x2="115" y2="22.5" stroke="#cbd5e1" strokeWidth="0.8" strokeLinecap="round" />
-
-      {/* Pushpin 1 (Red, lying left) */}
-      <ellipse cx="38" cy="43" rx="9" ry="7.5" transform="rotate(-18 38 43)" fill="url(#redCap)" />
-      <ellipse cx="35" cy="40" rx="3" ry="1.6" transform="rotate(-24 35 40)" fill="#fca5a5" opacity="0.55" />
-
-      {/* Pushpin 2 (Amber, upper right) */}
-      <ellipse cx="92" cy="31" rx="8.5" ry="7.5" transform="rotate(14 92 31)" fill="url(#amberCap)" />
-      <ellipse cx="89" cy="28.5" rx="2.6" ry="1.4" fill="#fde68a" opacity="0.55" />
-
-      {/* Pushpin 3 (Hero Red, center) */}
-      <ellipse cx="70" cy="40" rx="10.5" ry="9" transform="rotate(8 70 40)" fill="url(#redCap)" />
-      <ellipse cx="66.5" cy="36.5" rx="3.4" ry="1.8" transform="rotate(-15 66.5 36.5)" fill="#fecaca" opacity="0.65" />
-
-      {/* Pushpin 4 (Ivory, lower center) */}
-      <ellipse cx="62" cy="60" rx="8" ry="7" transform="rotate(-10 62 60)" fill="url(#ivoryCap)" />
-      <ellipse cx="59.5" cy="57.5" rx="2.5" ry="1.4" fill="#ffffff" opacity="0.8" />
-
-      {/* Pushpin 5 (Red, right) */}
-      <ellipse cx="104" cy="53" rx="9.5" ry="8.2" transform="rotate(20 104 53)" fill="url(#redCap)" />
-      <ellipse cx="101" cy="50" rx="3" ry="1.6" fill="#fca5a5" opacity="0.55" />
-    </svg>
-  );
-}
-
-function YarnBallArt() {
-  return (
-    <svg viewBox="0 0 116 96" className={styles.looseYarnSvg} aria-hidden="true">
-      <defs>
-        <filter id="yarnShadow" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="3.4" />
-        </filter>
-        <radialGradient id="yarnCore" cx="38%" cy="32%" r="65%">
-          <stop offset="0%" stopColor="#b91c1c" />
-          <stop offset="55%" stopColor="#7f1d1d" />
-          <stop offset="100%" stopColor="#2f0909" />
-        </radialGradient>
-      </defs>
-
-      {/* Soft cast shadow on bare wooden table */}
-      <ellipse cx="56" cy="70" rx="32" ry="14" fill="#000" opacity="0.72" filter="url(#yarnShadow)" />
-      {/* Trailing strand shadow */}
-      <path
-        d="M72 62 Q94 64 98 76 Q100 84 88 86"
-        fill="none"
-        stroke="rgba(0,0,0,0.6)"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-        filter="url(#yarnShadow)"
-      />
-      {/* Loose trailing red yarn curling across wood */}
-      <path
-        d="M72 58 Q94 60 98 72 Q100 80 88 82"
-        fill="none"
-        stroke="#991b1b"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-      />
-      <path
-        d="M72 58 Q94 60 98 72 Q100 80 88 82"
-        fill="none"
-        stroke="#dc2626"
-        strokeWidth="1"
-        strokeDasharray="3 4"
-        strokeLinecap="round"
-      />
-
-      {/* Sculpted wound ball of yarn */}
-      <circle cx="52" cy="46" r="28" fill="url(#yarnCore)" />
-      <g fill="none" strokeLinecap="round">
-        <path d="M28 36 Q52 22 76 38" stroke="#991b1b" strokeWidth="4" />
-        <path d="M25 46 Q52 34 79 48" stroke="#b91c1c" strokeWidth="3.4" />
-        <path d="M28 57 Q54 47 75 59" stroke="#7f1d1d" strokeWidth="3.8" />
-        <path d="M36 22 Q46 46 36 70" stroke="#991b1b" strokeWidth="3.5" />
-        <path d="M51 18 Q61 44 50 74" stroke="#b91c1c" strokeWidth="3.2" />
-        <path d="M65 23 Q55 46 67 68" stroke="#7f1d1d" strokeWidth="3.4" />
-        <path d="M31 30 Q54 52 72 62" stroke="#dc2626" strokeWidth="2.2" opacity="0.65" />
-        <path d="M33 61 Q54 42 73 30" stroke="#ef4444" strokeWidth="1.4" opacity="0.35" />
-      </g>
-      {/* Subtle rim shade */}
-      <circle cx="52" cy="46" r="28" fill="none" stroke="rgba(0,0,0,0.45)" strokeWidth="2" />
-    </svg>
-  );
-}
-
 export default function WorkspaceScreen({ hostDevice }) {
   const {
     setActiveScreen,
+    clues,
     totalUnread,
     mapPins,
     mapYarns,
@@ -156,34 +77,83 @@ export default function WorkspaceScreen({ hostDevice }) {
     deleteMapPin,
     addMapYarn,
     undoMapYarn,
+    resetCase,
   } = useCase();
 
+  const ambience = useAmbience();
+  const sceneRef = useRef(null);
+
+  const [lampOn, setLampOn] = useState(true);
+  const [boardView, setBoardView] = useState("map"); // "map" | "web"
+  const [tick, setTick] = useState(0);
+
+  // Map pinning & yarn state
   const [selectedPinId, setSelectedPinId] = useState(null);
   const [yarnMode, setYarnMode] = useState(false);
   const [yarnStartId, setYarnStartId] = useState(null);
-  const [tick, setTick] = useState(0);
 
-  // Field Notebook (write first, then attach to map)
+  // Write-first Field Notebook state
+  const [notebookOpen, setNotebookOpen] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const [pendingNote, setPendingNote] = useState(null);
+
+  // Modals
+  const [inspected, setInspected] = useState(null);
+  const [caseOpen, setCaseOpen] = useState(false);
+
+  const { detectedType, setOverrideType } = hostDevice;
+  const deviceLabel =
+    detectedType === "phone" ? "Adam's Phone" : "Adam's Laptop";
+  const foundClues = new Set(clues.map((c) => c.id));
+  const clockTime = formatGameClock(START_MINUTES + tick);
+  const canAttach = noteTitle.trim().length > 0 || noteBody.trim().length > 0;
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 6000);
     return () => clearInterval(id);
   }, []);
 
-  const { hh, mm } = formatGameClock(START_MINUTES + tick);
-  const { detectedType, setOverrideType } = hostDevice;
-  const deviceLabel =
-    detectedType === "phone" ? "Adam's Phone" : "Adam's Laptop";
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setInspected(null);
+        setCaseOpen(false);
+        setNotebookOpen(false);
+        setPendingNote(null);
+        setYarnMode(false);
+        setYarnStartId(null);
+      }
+      const tag = e.target?.tagName;
+      if (
+        (e.key === "l" || e.key === "L") &&
+        tag !== "TEXTAREA" &&
+        tag !== "INPUT"
+      ) {
+        setLampOn((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
-  const openMatchedDevice = () => {
-    setOverrideType(null);
+  const handlePointerMove = (e) => {
+    const el = sceneRef.current;
+    if (!el) return;
+    el.style.setProperty("--mx", `${e.clientX}px`);
+    el.style.setProperty("--my", `${e.clientY}px`);
+  };
+
+  const launchDevice = (targetType) => {
+    ambience.tick(700, 0.12);
+    setOverrideType(targetType === detectedType ? null : targetType);
     setActiveScreen("device");
   };
 
-  const canAttach = noteTitle.trim().length > 0 || noteBody.trim().length > 0;
+  const toggleLamp = () => {
+    ambience.tick(240, 0.09);
+    setLampOn((v) => !v);
+  };
 
   const handleArmAttach = () => {
     if (pendingNote) {
@@ -191,8 +161,11 @@ export default function WorkspaceScreen({ hostDevice }) {
       return;
     }
     if (!canAttach) return;
+    ambience.tick(580, 0.08);
+    setBoardView("map");
     setYarnMode(false);
     setYarnStartId(null);
+    setNotebookOpen(false);
     setPendingNote({
       title: noteTitle.trim() || "Field Note",
       note: noteBody.trim() || "Pinned from detective notebook.",
@@ -203,6 +176,7 @@ export default function WorkspaceScreen({ hostDevice }) {
 
   const handlePlacePendingNote = ({ lat, lng }) => {
     if (!pendingNote) return;
+    ambience.tick(340, 0.09);
     const created = addMapPin({
       lat,
       lng,
@@ -217,13 +191,17 @@ export default function WorkspaceScreen({ hostDevice }) {
     if (created) setSelectedPinId(created.id);
   };
 
-  const handleToggleYarnMode = () => {
+  const handleToggleYarn = () => {
+    ambience.tick(460, 0.08);
+    setBoardView("map");
     setPendingNote(null);
+    setNotebookOpen(false);
     setYarnStartId(null);
     setYarnMode((v) => !v);
   };
 
   const handleYarnPinClick = (pinId) => {
+    ambience.tick(520, 0.07);
     if (!yarnStartId) {
       setYarnStartId(pinId);
       return;
@@ -236,106 +214,188 @@ export default function WorkspaceScreen({ hostDevice }) {
     setYarnStartId(null);
   };
 
+  const renderWallPolaroids = (side) =>
+    WALL_POLAROIDS.filter((p) => p.side === side).map((p) => (
+      <button
+        key={p.id}
+        type="button"
+        className={styles.wallPolaroid}
+        style={{ "--rot": p.rot }}
+        onClick={() => {
+          ambience.tick(620, 0.07);
+          setInspected(p);
+        }}
+      >
+        {p.clueId && foundClues.has(p.clueId) && (
+          <span className={styles.clueDot} title="Clue verified" />
+        )}
+        <div className={styles.wallPhoto}>
+          <PortraitArt variant={p.variant} />
+        </div>
+        <span className={styles.wallCaption}>{p.title}</span>
+      </button>
+    ));
+
   return (
-    <div className={styles.tableSurface}>
-      <div className={styles.tableVignette} aria-hidden="true" />
+    <div
+      ref={sceneRef}
+      className={`${styles.scene} ${lampOn ? styles.lampOn : styles.lampOff}`}
+      onPointerMove={handlePointerMove}
+    >
+      {/* Minimal ambient corner controls */}
+      <div className={styles.ambientControls}>
+        <span className={styles.ambientTag}>{clues.length}/4 CLUES</span>
+        <button type="button" className={styles.ambientBtn} onClick={toggleLamp}>
+          Lamp {lampOn ? "on" : "off"} (L)
+        </button>
+        <button type="button" className={styles.ambientBtn} onClick={ambience.toggle}>
+          Rain {ambience.enabled ? "on" : "off"}
+        </button>
+        <button type="button" className={styles.ambientBtn} onClick={resetCase}>
+          Reset
+        </button>
+      </div>
 
-      <main className={styles.tableLayout}>
-        {/* Folded Kolkata Map lying on the wooden table */}
-        <KolkataMap
-          pins={mapPins}
-          yarns={mapYarns}
-          selectedPinId={selectedPinId}
-          onSelectPin={setSelectedPinId}
-          pendingNote={pendingNote}
-          onPlacePendingNote={handlePlacePendingNote}
-          onCancelPendingNote={() => setPendingNote(null)}
-          yarnMode={yarnMode}
-          yarnStartId={yarnStartId}
-          onYarnPinClick={handleYarnPinClick}
-          onExitYarnMode={() => {
-            setYarnMode(false);
-            setYarnStartId(null);
-          }}
-          onDeletePin={deleteMapPin}
-        />
-
-        {/* Physical items on the right side of the wooden table */}
-        <aside className={styles.tableTools} aria-label="Desk clock, pin and yarn tray, and notebook">
-          {/* Small Digital Desk Clock for In-Game Time */}
-          <div className={styles.digitalClock} aria-label={`In-game time ${hh}:${mm} AM`}>
-            <div className={styles.clockFace}>
-              <span className={styles.clockDigits}>
-                {hh}
-                <span className={styles.clockColon}>:</span>
-                {mm}
-              </span>
-              <div className={styles.clockMeta}>
-                <span>AM</span>
-                <span>TUE</span>
-              </div>
+      {/* Detective Room Wall */}
+      <main className={styles.wall}>
+        {/* Left Wall: Rainy Window + Pinned Polaroids */}
+        <div className={styles.wallLeft}>
+          <div className={styles.window} aria-hidden="true">
+            <div className={styles.glass}>
+              <span className={styles.rain} />
+              <span className={`${styles.rain} ${styles.rainFar}`} />
+              <span className={styles.lightning} />
             </div>
+            <span className={styles.mullionV} />
+            <span className={styles.mullionH} />
           </div>
+          <div className={styles.polaroidColumn}>{renderWallPolaroids("left")}</div>
+        </div>
 
-          {/* Loose Pushpins & Ball of Yarn lying directly on the bare wood table */}
-          <div className={styles.loosePropsRow}>
-            <button
-              type="button"
-              className={`${styles.looseObject} ${!yarnMode ? styles.looseObjectHeld : ""}`}
-              title="Pushpins — write in the notebook and pin to map"
-              aria-label="Pushpins"
-              onClick={() => {
-                setYarnMode(false);
-                setYarnStartId(null);
-              }}
-            >
-              <PinBundleArt />
-            </button>
-
-            <div className={styles.yarnSpotWrap}>
-              <button
-                type="button"
-                className={`${styles.looseObject} ${yarnMode ? styles.looseObjectPicked : ""}`}
-                title={
-                  yarnMode
-                    ? "Tying red yarn — click 2 pins on map"
-                    : "Ball of red yarn — click to tie two pins"
-                }
-                aria-label="Ball of red yarn"
-                onClick={handleToggleYarnMode}
-              >
-                <YarnBallArt />
-              </button>
-              {mapYarns.length > 0 && (
+        {/* Center Wooden-Framed Evidence Board (Kolkata Map by default, flippable to Suspect Web) */}
+        <div className={styles.boardCenter}>
+          {boardView === "map" ? (
+            <div className={styles.mapBoardFrame}>
+              <div className={styles.mapBoardInner}>
+                <KolkataMap
+                  pins={mapPins}
+                  yarns={mapYarns}
+                  selectedPinId={selectedPinId}
+                  onSelectPin={setSelectedPinId}
+                  pendingNote={pendingNote}
+                  onPlacePendingNote={handlePlacePendingNote}
+                  onCancelPendingNote={() => setPendingNote(null)}
+                  yarnMode={yarnMode}
+                  yarnStartId={yarnStartId}
+                  onYarnPinClick={handleYarnPinClick}
+                  onExitYarnMode={() => {
+                    setYarnMode(false);
+                    setYarnStartId(null);
+                  }}
+                  onDeletePin={deleteMapPin}
+                  onSound={ambience.tick}
+                />
+              </div>
+              <div className={styles.boardTray}>
                 <button
                   type="button"
-                  className={styles.undoYarnBtn}
-                  onClick={undoMapYarn}
+                  className={styles.traySwitch}
+                  onClick={() => {
+                    ambience.tick(420, 0.08);
+                    setBoardView("web");
+                  }}
                 >
-                  Undo yarn ({mapYarns.length})
+                  switch to suspect web
                 </button>
-              )}
+                <span className={styles.chalkPiece} />
+                <span className={`${styles.chalkPiece} ${styles.chalkPieceRed}`} />
+                <span className={styles.eraser} />
+              </div>
             </div>
+          ) : (
+            <div className={styles.webWrap}>
+              <DetectiveBoard onInspect={setInspected} onSound={ambience.tick} />
+              <button
+                type="button"
+                className={styles.backToMapBtn}
+                onClick={() => {
+                  ambience.tick(420, 0.08);
+                  setBoardView("map");
+                }}
+              >
+                ← back to Kolkata map
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Right Wall: Missing Poster + Pinned Polaroids */}
+        <div className={styles.wallRight}>
+          <div className={styles.wantedPoster} aria-hidden="true">
+            <b>MISSING</b>
+            <span>A. REYES</span>
+            <small>{CASE_BRIEF.caseId}</small>
           </div>
+          <div className={styles.polaroidColumn}>{renderWallPolaroids("right")}</div>
+        </div>
+      </main>
 
-          {/* Physical Spiral Field Notebook lying directly on the wood table */}
-          <div className={styles.notebookWrap}>
-            <div className={styles.notebookRings} aria-hidden="true">
-              {Array.from({ length: 11 }, (_, i) => (
-                <span key={i} className={styles.ring} />
-              ))}
-            </div>
+      {/* Detective's Wooden Desk */}
+      <footer>
+        <Deskscape
+          lampOn={lampOn}
+          clockTime={clockTime}
+          notebookOpen={notebookOpen}
+          hasDraftNote={canAttach}
+          yarnMode={yarnMode}
+          yarnCount={mapYarns.length}
+          onToggleLamp={toggleLamp}
+          onToggleNotebook={() => {
+            ambience.tick(500, 0.07);
+            setNotebookOpen((v) => !v);
+          }}
+          onSelectPins={() => {
+            ambience.tick(520, 0.07);
+            setYarnMode(false);
+            setYarnStartId(null);
+            setNotebookOpen(true);
+          }}
+          onToggleYarn={handleToggleYarn}
+          onUndoYarn={() => {
+            ambience.tick(300, 0.07);
+            undoMapYarn();
+          }}
+          onOpenDevice={launchDevice}
+          onOpenCase={() => {
+            ambience.tick(500, 0.09);
+            setCaseOpen(true);
+          }}
+          onInspect={(item) => {
+            ambience.tick(600, 0.07);
+            setInspected(item);
+          }}
+        />
+      </footer>
 
-            <div className={styles.notebookPaper}>
-              <div className={styles.notebookTop}>
-                <span className={styles.notebookPinPreview}>
-                  <i style={{ background: "#b91c1c" }} />
-                  FIELD NOTE
-                </span>
-                {canAttach && !pendingNote && (
+      {/* Slide-up Write-First Field Notebook Sheet */}
+      {notebookOpen && (
+        <aside className={styles.notebookDrawer} aria-label="Field notebook">
+          <div className={styles.notebookRings} aria-hidden="true">
+            {Array.from({ length: 10 }, (_, i) => (
+              <span key={i} className={styles.ring} />
+            ))}
+          </div>
+          <div className={styles.notebookPaper}>
+            <div className={styles.notebookTop}>
+              <span className={styles.notebookPinPreview}>
+                <i />
+                FIELD NOTEBOOK
+              </span>
+              <div className={styles.notebookTopBtns}>
+                {canAttach && (
                   <button
                     type="button"
-                    className={styles.clearNoteBtn}
+                    className={styles.nbTextBtn}
                     onClick={() => {
                       setNoteTitle("");
                       setNoteBody("");
@@ -344,49 +404,52 @@ export default function WorkspaceScreen({ hostDevice }) {
                     Clear
                   </button>
                 )}
-              </div>
-
-              <input
-                type="text"
-                className={styles.notebookTitleInput}
-                placeholder="Location / heading..."
-                value={noteTitle}
-                onChange={(e) => setNoteTitle(e.target.value)}
-                disabled={Boolean(pendingNote)}
-              />
-
-              <textarea
-                className={styles.notebookTextarea}
-                placeholder="Write a note here, then pin it onto the Kolkata map..."
-                value={noteBody}
-                onChange={(e) => setNoteBody(e.target.value)}
-                disabled={Boolean(pendingNote)}
-              />
-
-              <div className={styles.notebookFooter}>
                 <button
                   type="button"
-                  className={`${styles.attachBtn} ${
-                    pendingNote ? styles.attachBtnArmed : ""
-                  }`}
-                  disabled={!canAttach && !pendingNote}
-                  onClick={handleArmAttach}
+                  className={styles.nbCloseBtn}
+                  onClick={() => setNotebookOpen(false)}
+                  aria-label="Close notebook"
                 >
-                  {pendingNote
-                    ? "Click map to pin · Cancel"
-                    : "Pin Note to Map"}
+                  ×
                 </button>
               </div>
             </div>
+
+            <input
+              type="text"
+              className={styles.notebookTitleInput}
+              placeholder="Location / heading..."
+              value={noteTitle}
+              onChange={(e) => setNoteTitle(e.target.value)}
+              autoFocus
+            />
+
+            <textarea
+              className={styles.notebookTextarea}
+              placeholder="Write your note first, then click Pin Note to Map..."
+              value={noteBody}
+              onChange={(e) => setNoteBody(e.target.value)}
+            />
+
+            <div className={styles.notebookFooter}>
+              <button
+                type="button"
+                className={styles.attachBtn}
+                disabled={!canAttach}
+                onClick={handleArmAttach}
+              >
+                Pin Note to Map
+              </button>
+            </div>
           </div>
         </aside>
-      </main>
+      )}
 
-      {/* Subtle right-edge chevron to slide over to Adam's Laptop / Phone */}
+      {/* Subtle right-edge chevron to slide over to host-matched device */}
       <button
         type="button"
         className={styles.deviceChevron}
-        onClick={openMatchedDevice}
+        onClick={() => launchDevice(detectedType)}
         aria-label={`Open ${deviceLabel}`}
         title={`Open ${deviceLabel}`}
       >
@@ -403,6 +466,15 @@ export default function WorkspaceScreen({ hostDevice }) {
         </svg>
         <span className={styles.chevronTooltip}>{deviceLabel}</span>
       </button>
+
+      {/* Lamp & Cursor Flashlight Lighting */}
+      <div className={styles.light} aria-hidden="true" />
+      <div className={styles.vignette} aria-hidden="true" />
+
+      {inspected && (
+        <InspectModal item={inspected} onClose={() => setInspected(null)} />
+      )}
+      {caseOpen && <CaseFileModal onClose={() => setCaseOpen(false)} />}
     </div>
   );
 }

@@ -26,6 +26,7 @@ export default function KolkataMap({
   onYarnPinClick,
   onExitYarnMode,
   onDeletePin,
+  onSound,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -275,6 +276,7 @@ export default function KolkataMap({
               type="button"
               className={styles.deleteBtn}
               onClick={() => {
+                onSound?.(280, 0.08);
                 onDeletePin(selectedPin.id);
                 onSelectPin(null);
               }}

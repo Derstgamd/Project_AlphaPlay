@@ -1,0 +1,724 @@
+/* Physical Detective Clipboard Lobby — Pages 1, 2, Pairing & Joining */
+
+.deskStage {
+  position: relative;
+  min-height: 100dvh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 14px 24px;
+  background-color: #16110e;
+  background-image:
+    radial-gradient(ellipse at 50% 35%, rgba(255, 232, 190, 0.06) 0%, rgba(7, 5, 4, 0.72) 78%, rgba(3, 2, 2, 0.92) 100%),
+    url("/desk-wood.jpg");
+  background-size: cover;
+  background-position: center;
+  overflow-x: hidden;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Clipboard Masonite Backing Board */
+.clipboard {
+  position: relative;
+  width: 100%;
+  max-width: 470px;
+  padding: 36px 16px 20px;
+  border-radius: 16px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.08) 0 2px,
+      transparent 2px 11px
+    ),
+    linear-gradient(155deg, #5a3e28 0%, #3d291a 52%, #2b1c11 100%);
+  box-shadow:
+    0 32px 72px rgba(0, 0, 0, 0.85),
+    0 10px 24px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 224, 185, 0.2),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(25, 16, 10, 0.85);
+}
+
+/* Brushed Steel Clip Hardware */
+.metalClip {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 158px;
+  height: 46px;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.clipLoop {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 58px;
+  height: 22px;
+  border-radius: 12px 12px 4px 4px;
+  background: linear-gradient(180deg, #b8bec7 0%, #6f7682 60%, #4b515c 100%);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.65),
+    inset 0 1px 1px rgba(255, 255, 255, 0.65);
+}
+
+.clipLoop::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 9px;
+  border-radius: 999px;
+  background: #23170e;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.85);
+}
+
+.clipBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 27px;
+  border-radius: 6px 6px 8px 8px;
+  background: linear-gradient(
+    180deg,
+    #cfd5dd 0%,
+    #9aa2ae 30%,
+    #636a76 72%,
+    #88909c 100%
+  );
+  box-shadow:
+    0 8px 14px rgba(0, 0, 0, 0.52),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+}
+
+.rivet {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #e5e7eb, #4b5563 75%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+/* Stacked Paper Sheets under the Active Page */
+.paperStack {
+  position: relative;
+}
+
+.underSheetA,
+.underSheetB {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.underSheetB {
+  background: #cfc6b2;
+  transform: rotate(1.3deg) translate(4px, 5px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+  z-index: 1;
+}
+
+.underSheetA {
+  background: #dcd3bf;
+  transform: rotate(-0.9deg) translate(-3px, 3px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.38);
+  z-index: 2;
+}
+
+/* Active Paper Sheet */
+.sheet {
+  position: relative;
+  z-index: 5;
+  min-height: 580px;
+  padding: 26px 22px 22px 34px;
+  border-radius: 2px;
+  background-color: #ece4d1;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent 22px,
+      rgba(185, 28, 28, 0.24) 22px,
+      rgba(185, 28, 28, 0.24) 23px,
+      transparent 23px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 27px,
+      rgba(45, 58, 78, 0.12) 27px,
+      rgba(45, 58, 78, 0.12) 28px
+    );
+  color: #1c1917;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.45),
+    inset 0 14px 18px -12px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transform-origin: 50% 0%;
+  animation: sheetFlipIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sheetFlipIn {
+  from {
+    opacity: 0.4;
+    transform: perspective(900px) rotateX(-16deg) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(900px) rotateX(0deg) translateY(0);
+  }
+}
+
+/* Paper Top Meta Row */
+.sheetTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid rgba(28, 25, 23, 0.22);
+}
+
+.formStamp {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #57534e;
+}
+
+.pageNum {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #78716c;
+}
+
+.flipBackBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 19px;
+  font-weight: 700;
+  color: #1e3a5f;
+  cursor: pointer;
+}
+
+.flipBackBtn:hover {
+  color: #991b1b;
+  text-decoration: underline;
+}
+
+/* Title & Story on Clipboard */
+.heroBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: #18181b;
+}
+
+.titleWipe {
+  color: #991b1b;
+}
+
+.rubberStamp {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #991b1b;
+  border: 2px solid #991b1b;
+  border-radius: 3px;
+  padding: 2px 7px;
+  transform: rotate(-4deg);
+  opacity: 0.88;
+}
+
+.storyNote {
+  margin: 0;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 21px;
+  line-height: 1.28;
+  color: #292524;
+}
+
+/* Section Heading written on paper */
+.inkSection {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #57534e;
+  margin-bottom: 4px;
+}
+
+/* Role Assignment Written Rows */
+.roleList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rolePaperBtn {
+  position: relative;
+  width: 100%;
+  text-align: left;
+  padding: 13px 14px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(28, 25, 23, 0.26);
+  background: rgba(255, 253, 247, 0.52);
+  color: #1c1917;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.14s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.rolePaperBtn:hover {
+  background: rgba(255, 253, 247, 0.88);
+  transform: translateX(2px);
+}
+
+.rolePaperFather {
+  border-left: 4px solid #0e7490;
+}
+
+.rolePaperFather:hover {
+  border-color: #0e7490;
+}
+
+.rolePaperRohan {
+  border-left: 4px solid #991b1b;
+}
+
+.rolePaperRohan:hover {
+  border-color: #991b1b;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  border: 2px solid #44403c;
+  border-radius: 3px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: transparent;
+  transition: color 0.14s ease;
+}
+
+.rolePaperFather:hover .checkbox {
+  color: #0e7490;
+  border-color: #0e7490;
+}
+
+.rolePaperRohan:hover .checkbox {
+  color: #991b1b;
+  border-color: #991b1b;
+}
+
+.roleCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.roleTagFather,
+.roleTagRohan {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.roleTagFather {
+  color: #0e7490;
+}
+
+.roleTagRohan {
+  color: #991b1b;
+}
+
+.roleTitle {
+  font-family: var(--font-handwriting), cursive;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: #18181b;
+}
+
+.roleSub {
+  font-size: 12.5px;
+  color: #44403c;
+}
+
+/* Quick footnote links on Page 1 */
+.quickFoot {
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(28, 25, 23, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #57534e;
+}
+
+/* Curled Bottom-Right Page Flip Control */
+.flipBar {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.footCaption {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  color: #78716c;
+}
+
+.nextPageBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1.5px solid #292524;
+  border-radius: 4px 4px 14px 4px;
+  background: linear-gradient(135deg, #f5efe0 65%, #d6cbb3 100%);
+  color: #1c1917;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 2px 3px 0 rgba(28, 25, 23, 0.25);
+  transition: transform 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.nextPageBtn:hover {
+  transform: translate(1px, -1px);
+  border-color: #991b1b;
+  color: #991b1b;
+}
+
+/* Page 2: Join Room & Solo Testing on Paper */
+.paperBlock {
+  padding: 14px;
+  border: 1.5px dashed rgba(28, 25, 23, 0.28);
+  border-radius: 4px;
+  background: rgba(255, 253, 247, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.joinRow {
+  display: flex;
+  gap: 8px;
+}
+
+.codeInput {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  background: transparent;
+  border: none;
+  border-bottom: 2.5px solid #292524;
+  color: #18181b;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-align: center;
+  outline: none;
+}
+
+.codeInput::placeholder {
+  color: rgba(68, 64, 60, 0.35);
+}
+
+.codeInput:focus {
+  border-bottom-color: #991b1b;
+}
+
+.stampSubmitBtn {
+  height: 46px;
+  padding: 0 18px;
+  border: 2px solid #991b1b;
+  border-radius: 4px;
+  background: #991b1b;
+  color: #faf7f0;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.stampSubmitBtn:hover {
+  background: #7f1d1d;
+}
+
+.soloRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.inkBtn {
+  height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid #44403c;
+  border-radius: 4px;
+  background: rgba(255, 253, 247, 0.6);
+  color: #1c1917;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inkBtn:hover {
+  border-color: #991b1b;
+  color: #991b1b;
+  background: rgba(255, 253, 247, 0.95);
+}
+
+.inlineErr {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+/* Pairing & Joining Pages on Clipboard */
+.pairCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.roleBanner {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #44403c;
+}
+
+.codeStampBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 22px 8px;
+  border: 2px solid #991b1b;
+  border-radius: 4px;
+  transform: rotate(-1.2deg);
+  background: rgba(153, 27, 27, 0.05);
+}
+
+.codeStampLabel {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #991b1b;
+}
+
+.codeStampNum {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  padding-left: 0.18em;
+  line-height: 1.05;
+  color: #991b1b;
+}
+
+/* QR Code taped onto the clipboard paper */
+.tapedQr {
+  position: relative;
+  margin-top: 4px;
+  padding: 8px;
+  background: #fafaf7;
+  border: 1px solid rgba(28, 25, 23, 0.22);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+  transform: rotate(1deg);
+}
+
+.tapeStrip {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 68px;
+  height: 16px;
+  background: rgba(235, 224, 185, 0.78);
+  border: 1px solid rgba(120, 113, 108, 0.22);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.qrImg {
+  width: 174px;
+  height: 174px;
+  display: block;
+}
+
+.qrPlaceholder {
+  width: 174px;
+  height: 174px;
+  display: grid;
+  place-items: center;
+  color: #57534e;
+  font-size: 12px;
+}
+
+.pairHint {
+  margin: 0;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 20px;
+  line-height: 1.2;
+  color: #292524;
+  max-width: 300px;
+}
+
+.pairActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.waitRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0e7490;
+  margin-top: 2px;
+}
+
+.waitDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0e7490;
+  animation: blinkWait 1.2s ease-in-out infinite;
+}
+
+@keyframes blinkWait {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.botFootRow {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1.5px dashed rgba(28, 25, 23, 0.24);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-handwriting), cursive;
+  font-size: 19px;
+  color: #44403c;
+}
+
+.botStampBtn {
+  padding: 7px 14px;
+  border: 2px solid #92400e;
+  border-radius: 4px;
+  background: rgba(180, 83, 9, 0.12);
+  color: #78350f;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.botStampBtn:hover {
+  background: #92400e;
+  color: #faf7f0;
+}
+
+.relayPill {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #57534e;
+  border: 1px solid rgba(28, 25, 23, 0.2);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+@media (max-width: 480px) {
+  .clipboard {
+    padding: 32px 10px 14px;
+  }
+
+  .sheet {
+    min-height: 540px;
+    padding: 22px 14px 18px 28px;
+  }
+
+  .title {
+    font-size: 23px;
+  }
+
+  .codeStampNum {
+    font-size: 36px;
+  }
+}

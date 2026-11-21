@@ -18,6 +18,88 @@ function Prop({ label, className = "", style, onClick, children }) {
   );
 }
 
+function PinBundleArt() {
+  return (
+    <svg viewBox="0 0 110 72" width="100%" height="100%" aria-hidden="true">
+      <defs>
+        <filter id="deskPinSh" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" />
+        </filter>
+        <radialGradient id="dRedCap" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stopColor="#ef4444" />
+          <stop offset="45%" stopColor="#991b1b" />
+          <stop offset="100%" stopColor="#450a0a" />
+        </radialGradient>
+        <radialGradient id="dAmberCap" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stopColor="#f59e0b" />
+          <stop offset="50%" stopColor="#92400e" />
+          <stop offset="100%" stopColor="#451a03" />
+        </radialGradient>
+        <radialGradient id="dIvoryCap" cx="35%" cy="30%" r="65%">
+          <stop offset="0%" stopColor="#faf7f0" />
+          <stop offset="55%" stopColor="#c7bfb0" />
+          <stop offset="100%" stopColor="#57534e" />
+        </radialGradient>
+      </defs>
+      <g filter="url(#deskPinSh)" opacity="0.72">
+        <ellipse cx="32" cy="44" rx="13" ry="6" transform="rotate(-14 32 44)" fill="#000" />
+        <ellipse cx="56" cy="36" rx="14" ry="7" transform="rotate(10 56 36)" fill="#000" />
+        <ellipse cx="78" cy="48" rx="13" ry="6" transform="rotate(-8 78 48)" fill="#000" />
+        <ellipse cx="48" cy="54" rx="11" ry="5" transform="rotate(18 48 54)" fill="#000" />
+      </g>
+      <line x1="26" y1="35" x2="10" y2="46" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
+      <line x1="26" y1="34.5" x2="10" y2="45.5" stroke="#cbd5e1" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="54" y1="28" x2="66" y2="12" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
+      <line x1="54" y1="27.5" x2="66" y2="11.5" stroke="#cbd5e1" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="80" y1="42" x2="98" y2="35" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
+      <line x1="80" y1="41.5" x2="98" y2="34.5" stroke="#cbd5e1" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="44" y1="50" x2="31" y2="62" stroke="#64748b" strokeWidth="1.8" strokeLinecap="round" />
+      <ellipse cx="30" cy="34" rx="7.5" ry="6.2" transform="rotate(-18 30 34)" fill="url(#dRedCap)" />
+      <ellipse cx="70" cy="24" rx="7" ry="6" transform="rotate(14 70 24)" fill="url(#dAmberCap)" />
+      <ellipse cx="52" cy="31" rx="8.8" ry="7.4" transform="rotate(8 52 31)" fill="url(#dRedCap)" />
+      <ellipse cx="49" cy="28" rx="2.8" ry="1.4" fill="#fecaca" opacity="0.65" />
+      <ellipse cx="46" cy="48" rx="6.6" ry="5.8" transform="rotate(-10 46 48)" fill="url(#dIvoryCap)" />
+      <ellipse cx="77" cy="43" rx="8" ry="6.8" transform="rotate(20 77 43)" fill="url(#dRedCap)" />
+    </svg>
+  );
+}
+
+function YarnBallArt() {
+  return (
+    <svg viewBox="0 0 96 82" width="100%" height="100%" aria-hidden="true">
+      <defs>
+        <filter id="deskYarnSh" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.8" />
+        </filter>
+        <radialGradient id="dYarnCore" cx="38%" cy="32%" r="65%">
+          <stop offset="0%" stopColor="#b91c1c" />
+          <stop offset="55%" stopColor="#7f1d1d" />
+          <stop offset="100%" stopColor="#2f0909" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="46" cy="60" rx="27" ry="11" fill="#000" opacity="0.72" filter="url(#deskYarnSh)" />
+      <path
+        d="M60 50 Q80 52 84 62 Q86 69 75 71"
+        fill="none"
+        stroke="#991b1b"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <circle cx="43" cy="38" r="23" fill="url(#dYarnCore)" />
+      <g fill="none" strokeLinecap="round">
+        <path d="M23 30 Q43 18 63 32" stroke="#991b1b" strokeWidth="3.4" />
+        <path d="M21 38 Q43 28 65 40" stroke="#b91c1c" strokeWidth="2.9" />
+        <path d="M24 47 Q45 39 62 49" stroke="#7f1d1d" strokeWidth="3.2" />
+        <path d="M30 18 Q38 38 30 58" stroke="#991b1b" strokeWidth="3" />
+        <path d="M43 15 Q51 37 42 61" stroke="#b91c1c" strokeWidth="2.7" />
+        <path d="M54 19 Q46 38 56 56" stroke="#7f1d1d" strokeWidth="2.8" />
+        <path d="M26 25 Q45 43 60 51" stroke="#dc2626" strokeWidth="1.9" opacity="0.65" />
+      </g>
+      <circle cx="43" cy="38" r="23" fill="none" stroke="rgba(0,0,0,0.45)" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 function LaptopArt({ unread }) {
   return (
     <svg viewBox="0 0 240 150" width="100%" height="100%" aria-hidden="true">
@@ -28,7 +110,7 @@ function LaptopArt({ unread }) {
           <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0.95" />
         </linearGradient>
         <radialGradient id="dsSpill" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.3" />
+          <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.28" />
           <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="dsBounce" x1="50%" y1="0%" x2="50%" y2="100%">
@@ -36,7 +118,7 @@ function LaptopArt({ unread }) {
           <stop offset="100%" stopColor="#93c5fd" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <g transform="rotate(6 120 82)">
+      <g transform="rotate(4 120 82)">
         <ellipse cx="120" cy="88" rx="116" ry="56" fill="url(#dsSpill)" className={styles.pulse} />
         <polygon points="46,72 196,72 214,134 28,134" fill="rgba(0,0,0,0.6)" />
         <polygon points="52,18 188,18 194,68 46,68" fill="#12161d" stroke="#363f4f" strokeWidth="2" strokeLinejoin="round" />
@@ -67,7 +149,7 @@ function LaptopArt({ unread }) {
 function PhoneArt({ unread }) {
   return (
     <svg viewBox="0 0 80 110" width="100%" height="100%" aria-hidden="true">
-      <g transform="rotate(16 40 55)">
+      <g transform="rotate(14 40 55)">
         <rect x="18" y="14" width="46" height="84" rx="8" fill="rgba(0,0,0,0.55)" />
         <rect x="14" y="10" width="46" height="84" rx="8" fill="#14171d" stroke="#cc4844" strokeWidth="3.5" />
         <rect
@@ -116,10 +198,18 @@ function LampArt({ on }) {
 
 export default function Deskscape({
   lampOn,
+  clockTime,
+  notebookOpen,
+  hasDraftNote,
+  yarnMode,
+  yarnCount,
   onToggleLamp,
+  onToggleNotebook,
+  onSelectPins,
+  onToggleYarn,
+  onUndoYarn,
   onOpenDevice,
   onOpenCase,
-  onOpenNotes,
   onInspect,
 }) {
   const { totalUnread } = useCase();
@@ -129,55 +219,91 @@ export default function Deskscape({
       <div className={`${styles.lampPool} ${lampOn ? styles.lampPoolOn : ""}`} aria-hidden="true" />
 
       <div className={styles.inner}>
+        {/* Spiral Field Notebook on the desk */}
         <Prop
-          label="Notes & scratchpad"
-          className={styles.sticky}
-          style={{ left: "3%" }}
-          onClick={onOpenNotes}
+          label={notebookOpen ? "Close field notebook" : "Write note to pin on map"}
+          className={`${styles.notebookProp} ${notebookOpen ? styles.notebookActive : ""}`}
+          style={{ left: "1.5%" }}
+          onClick={onToggleNotebook}
         >
-          <span className={styles.pencils} aria-hidden="true">
-            <i style={{ background: "#2563eb" }} />
-            <i style={{ background: "#eab308" }} />
-            <i style={{ background: "#16a34a" }} />
-            <i style={{ background: "#e5e7eb" }} />
+          <span className={styles.nbRings} aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
           </span>
-          <span className={styles.stickyText}>
-            <strong>Don&apos;t forget</strong>
-            Check Locker #19
-            <br />
-            PIN: ????
+          <span className={styles.nbPaper}>
+            <strong>Field Notes</strong>
+            <span>{hasDraftNote ? "Draft ready..." : "Write & pin"}</span>
+            <span className={styles.nbRule} />
+            <span className={styles.nbRule} />
           </span>
         </Prop>
 
-        <Prop label="Case file CASE-04" className={styles.folder} style={{ left: "14%" }} onClick={onOpenCase}>
+        {/* Loose Pushpins lying directly on wood */}
+        <Prop
+          label="Pushpins (write in notebook to pin)"
+          className={styles.pinsProp}
+          style={{ left: "12.5%" }}
+          onClick={onSelectPins}
+        >
+          <PinBundleArt />
+        </Prop>
+
+        {/* Ball of Red Yarn lying directly on wood */}
+        <div className={styles.yarnAnchor} style={{ left: "21.5%" }}>
+          <Prop
+            label={yarnMode ? "Tying red yarn (click 2 pins on map)" : "Red yarn — click to tie two pins"}
+            className={`${styles.yarnProp} ${yarnMode ? styles.yarnPicked : ""}`}
+            onClick={onToggleYarn}
+          >
+            <YarnBallArt />
+          </Prop>
+          {yarnCount > 0 && (
+            <button type="button" className={styles.undoYarn} onClick={onUndoYarn}>
+              undo ({yarnCount})
+            </button>
+          )}
+        </div>
+
+        {/* Manila Case Folder */}
+        <Prop
+          label="Case file CASE-04"
+          className={styles.folder}
+          style={{ left: "30.5%" }}
+          onClick={onOpenCase}
+        >
           <span className={styles.folderTab}>CASE-04</span>
           <span className={styles.folderBody}>
             <span className={styles.stamp}>OPEN</span>
             <span className={styles.folderLine} />
             <span className={styles.folderLine} />
-            <span className={styles.folderLine} style={{ width: "55%" }} />
           </span>
         </Prop>
 
+        {/* Adam's Open Glowing Laptop */}
         <Prop
           label="Open Adam's Laptop"
           className={styles.laptop}
-          style={{ left: "28%" }}
+          style={{ left: "41%" }}
           onClick={() => onOpenDevice("laptop")}
         >
           <LaptopArt unread={totalUnread} />
         </Prop>
 
-        <div className={styles.mug} aria-hidden="true">
+        {/* Steaming Mug */}
+        <div className={styles.mug} style={{ left: "58.5%" }} aria-hidden="true">
           <span className={styles.steam} />
           <span className={`${styles.steam} ${styles.steam2}`} />
           <span className={styles.mugBody} />
         </div>
 
+        {/* Evidence Bag: Silver Keycard */}
         <Prop
           label="Evidence bag: silver keycard"
           className={styles.bag}
-          style={{ left: "58%" }}
+          style={{ left: "64%" }}
           onClick={() =>
             onInspect({
               title: "Silver Keycard",
@@ -193,19 +319,41 @@ export default function Deskscape({
           </span>
         </Prop>
 
+        {/* Green Banker's Desk Lamp */}
         <Prop
-          label={lampOn ? "Turn lamp off" : "Turn lamp on"}
+          label={lampOn ? "Turn lamp off (L)" : "Turn lamp on (L)"}
           className={styles.lamp}
-          style={{ left: "70%" }}
+          style={{ left: "71.5%" }}
           onClick={onToggleLamp}
         >
           <LampArt on={lampOn} />
         </Prop>
 
+        {/* Small Matte Digital Desk Clock */}
+        <div
+          className={styles.digitalClock}
+          style={{ left: "80%" }}
+          aria-label={`In-game time ${clockTime.hh}:${clockTime.mm} AM`}
+        >
+          <div className={styles.clockFace}>
+            <span className={styles.clockDigits}>
+              {clockTime.hh}
+              <span className={styles.clockColon}>:</span>
+              {clockTime.mm}
+            </span>
+            <span className={styles.clockAm}>AM</span>
+          </div>
+        </div>
+
+        {/* Adam's Vibrating Red Phone */}
         <Prop
-          label={totalUnread > 0 ? `Open Adam's Phone (${totalUnread} new)` : "Open Adam's Phone"}
+          label={
+            totalUnread > 0
+              ? `Open Adam's Phone (${totalUnread} new)`
+              : "Open Adam's Phone"
+          }
           className={`${styles.phone} ${totalUnread > 0 ? styles.buzz : ""}`}
-          style={{ left: "86%" }}
+          style={{ left: "90%" }}
           onClick={() => onOpenDevice("phone")}
         >
           <PhoneArt unread={totalUnread} />
