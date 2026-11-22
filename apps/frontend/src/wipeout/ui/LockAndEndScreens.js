@@ -22,8 +22,8 @@ export function LockNotification({
   }, [role]);
 
   return (
-    <div className={n.notifAnchor} role="alert">
-      <div className={cx(n.card, isF ? n.cardWin : n.cardWarn)}>
+    <div className={cx(n.notifAnchor, isF && n.notifAnchorMac)} role="alert">
+      <div className={cx(n.card, isF ? n.cardMac : n.cardWarn)}>
         <div className={n.headRow}>
           <span className={n.appMeta}>
             <span className={isF ? n.dotCyan : n.dotAmber} />
@@ -132,10 +132,10 @@ export function EndingNotification({
 
   if (minimized) {
     return (
-      <div className={n.notifAnchor}>
+      <div className={cx(n.notifAnchor, isF && n.notifAnchorMac)}>
         <button
           type="button"
-          className={cx(n.miniBar, !won && n.miniBarLoss)}
+          className={cx(n.miniBar, !won && n.miniBarLoss, isF && n.miniBarMac)}
           onClick={() => {
             sfx.paperFlip();
             setMinimized(false);
@@ -151,8 +151,8 @@ export function EndingNotification({
   }
 
   return (
-    <div className={n.notifAnchor} role="dialog" aria-label="Wipeout result">
-      <div className={cx(n.card, won ? n.cardWin : n.cardDanger)}>
+    <div className={cx(n.notifAnchor, isF && n.notifAnchorMac)} role="dialog" aria-label="Wipeout result">
+      <div className={cx(n.card, isF ? (won ? n.cardMac : n.cardMacDanger) : won ? n.cardWin : n.cardDanger)}>
         <div className={n.headRow}>
           <span className={n.appMeta}>
             <span className={won ? n.dotCyan : n.dotRed} />

@@ -1,0 +1,3439 @@
+/* Authentic macOS Sequoia / Sonoma MacBook Air Interface for Riya's Laptop */
+
+.macScreen {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    var(--font-geist-sans), system-ui, sans-serif;
+  color: #f5f5f7;
+  background-color: #090d1a;
+  transition: filter 0.15s ease;
+}
+
+.macWallpaper {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  transition: background 0.35s ease;
+}
+
+.macWallpaper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    transparent 45%,
+    rgba(0, 0, 0, 0.28) 100%
+  );
+  pointer-events: none;
+}
+
+/* ───────────────────── 28px MACOS MENU BAR ───────────────────── */
+.menuBar {
+  position: relative;
+  z-index: 900;
+  height: 28px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(20, 20, 24, 0.48);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.menuLeft,
+.menuRight {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.menuTrigger {
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menuTrigger:hover,
+.menuTriggerOpen {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.menuAppName {
+  font-weight: 700;
+}
+
+.menuItemMuted {
+  opacity: 0.88;
+}
+
+.menuStatusPill {
+  height: 20px;
+  padding: 0 8px;
+  margin-right: 4px;
+  border-radius: 5px;
+  background: rgba(10, 132, 255, 0.22);
+  border: 0.5px solid rgba(100, 210, 255, 0.38);
+  color: #bae6fd;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.menuPinPill {
+  height: 20px;
+  padding: 0 8px;
+  margin-right: 4px;
+  border-radius: 5px;
+  background: rgba(245, 158, 11, 0.24);
+  border: 0.5px solid rgba(251, 191, 36, 0.5);
+  color: #fde047;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.menuClock {
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.batteryPct {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
+/* Native macOS Dropdown Menus */
+.menuDropdown {
+  position: fixed;
+  top: 30px;
+  z-index: 980;
+  min-width: 215px;
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(34, 34, 38, 0.86);
+  backdrop-filter: blur(32px) saturate(190%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.58), 0 0 0 0.5px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.menuDropItem {
+  width: 100%;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #f5f5f7;
+  font-size: 13px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.menuDropItem:hover {
+  background: #0a84ff;
+  color: #ffffff;
+}
+
+.menuDropItem small {
+  opacity: 0.65;
+  font-size: 11px;
+}
+
+.menuDropSep {
+  height: 1px;
+  margin: 4px 8px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ───────────────────── LIVE LALBAZAR DISPATCH BANNER ───────────────────── */
+.dispatchBanner {
+  position: fixed;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 840;
+  width: min(760px, calc(100vw - 28px));
+  border-radius: 14px;
+  padding: 9px 14px 8px;
+  background: rgba(28, 28, 32, 0.78);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dispatchBannerMilestone {
+  background: rgba(48, 20, 24, 0.84);
+  border-color: rgba(255, 95, 87, 0.5);
+}
+
+.dispatchTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dispatchLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.dispatchAppBadge {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(10, 132, 255, 0.24);
+  border: 0.5px solid rgba(100, 210, 255, 0.45);
+  color: #7dd3fc;
+}
+
+.dispatchGoalBadge {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 69, 58, 0.28);
+  border: 0.5px solid rgba(255, 105, 97, 0.65);
+  color: #fecaca;
+}
+
+.dispatchTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.dispatchTimer {
+  min-width: 62px;
+  text-align: center;
+  padding: 2px 9px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 15px;
+  font-weight: 800;
+  color: #64d2ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.dispatchTimerDanger {
+  color: #ff6961;
+  border-color: rgba(255, 69, 58, 0.75);
+  background: rgba(127, 29, 29, 0.5);
+  animation: pulseWarn 0.6s ease-in-out infinite;
+}
+
+@keyframes pulseWarn {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.dispatchLead {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.35;
+  color: rgba(245, 245, 247, 0.92);
+}
+
+.dispatchLead b {
+  color: #ffd60a;
+}
+
+.dispatchBars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 1px;
+}
+
+.timerTrack {
+  height: 3.5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.timerFill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #64d2ff, #0a84ff);
+  transition: width 0.1s linear;
+}
+
+.timerFillDanger {
+  background: linear-gradient(90deg, #ff9f0a, #ff453a);
+}
+
+.stepPips {
+  display: flex;
+  gap: 4px;
+}
+
+.stepPip {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.stepPipDone {
+  background: #30d158;
+}
+
+.stepPipNow {
+  background: #64d2ff;
+  box-shadow: 0 0 6px rgba(100, 210, 255, 0.85);
+}
+
+.stepPipGoal {
+  background: rgba(255, 159, 10, 0.35);
+}
+
+.stepPipGoal.stepPipDone {
+  background: #ffd60a;
+}
+
+.stepPipGoal.stepPipNow {
+  background: #ff453a;
+}
+
+/* ───────────────────── DESKTOP CANVAS (HOME SCREEN) ───────────────────── */
+.desktopStage {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: calc(100dvh - 28px);
+  overflow: hidden;
+}
+
+/* Authentic macOS Sonoma Desktop Widgets (Left side) */
+.widgetsCol {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 220px;
+}
+
+.widgetsColShifted {
+  top: 112px;
+}
+
+.widgetCard {
+  width: 100%;
+  padding: 13px 15px;
+  border-radius: 20px;
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  background: rgba(28, 30, 38, 0.46);
+  backdrop-filter: blur(26px) saturate(180%);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.widgetCard:hover {
+  transform: scale(1.02);
+  background: rgba(34, 38, 48, 0.58);
+}
+
+.wxWidget {
+  background: linear-gradient(155deg, rgba(29, 78, 216, 0.55), rgba(15, 23, 42, 0.62));
+}
+
+.wxWidgetTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.wxWidgetCity {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.wxWidgetTemp {
+  font-size: 38px;
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.wxWidgetSub {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.82);
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.calWidgetRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calWidgetDate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-right: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.calWidgetDay {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ff453a;
+  letter-spacing: 0.06em;
+}
+
+.calWidgetNum {
+  font-size: 30px;
+  font-weight: 300;
+  line-height: 1.05;
+}
+
+.calWidgetEvents {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.calWidgetEvent {
+  font-size: 11px;
+  line-height: 1.25;
+  padding-left: 7px;
+  border-left: 2.5px solid #ff453a;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.calWidgetEvent small {
+  display: block;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.batWidgetRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.batRingCell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.batRing {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3.5px solid #30d158;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+/* Desktop Icons on Right Side (Authentic macOS layout!) */
+.desktopFilesCol {
+  position: absolute;
+  top: 24px;
+  right: 22px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.desktopFilesColShifted {
+  top: 112px;
+}
+
+.desktopFileBtn {
+  width: 96px;
+  padding: 6px 5px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.desktopFileBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.desktopFileSelected {
+  background: rgba(10, 132, 255, 0.28) !important;
+  border-color: rgba(100, 210, 255, 0.55);
+}
+
+.desktopFileGlyph {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+}
+
+.desktopFilePhoto {
+  width: 56px;
+  height: 46px;
+  object-fit: cover;
+  border-radius: 5px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.desktopFileLabel {
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.92), 0 0 8px rgba(0, 0, 0, 0.6);
+  word-break: break-word;
+}
+
+.desktopFileSelected .desktopFileLabel {
+  background: #0a84ff;
+  text-shadow: none;
+}
+
+/* ───────────────────── MULTI-WINDOW MACOS WINDOWS ───────────────────── */
+.macWindow {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1e1e22;
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 28px 72px rgba(0, 0, 0, 0.62),
+    0 8px 20px rgba(0, 0, 0, 0.35),
+    0 0 0 0.5px rgba(0, 0, 0, 0.65);
+  animation: winPop 0.16s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes winPop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.macWindowUnfocused {
+  box-shadow:
+    0 16px 38px rgba(0, 0, 0, 0.44),
+    0 0 0 0.5px rgba(0, 0, 0, 0.55);
+}
+
+.macWindowMax {
+  border-radius: 0 !important;
+}
+
+.winTitlebar {
+  height: 38px;
+  flex-shrink: 0;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #323236 0%, #28282c 100%);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.65);
+  cursor: grab;
+}
+
+.winTitlebar:active {
+  cursor: grabbing;
+}
+
+.trafficLights {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 68px;
+}
+
+.tlBtn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(0, 0, 0, 0.28);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  color: transparent;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+.trafficLights:hover .tlBtn {
+  color: rgba(0, 0, 0, 0.68);
+}
+
+.tlClose {
+  background: #ff5f57;
+}
+
+.tlMin {
+  background: #febc2e;
+}
+
+.tlMax {
+  background: #28c840;
+}
+
+.macWindowUnfocused .tlBtn {
+  background: #525256;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.macWindowUnfocused .trafficLights:hover .tlClose {
+  background: #ff5f57;
+}
+
+.macWindowUnfocused .trafficLights:hover .tlMin {
+  background: #febc2e;
+}
+
+.macWindowUnfocused .trafficLights:hover .tlMax {
+  background: #28c840;
+}
+
+.winTitleCenter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(245, 245, 247, 0.92);
+  pointer-events: none;
+}
+
+.winRightSpacer {
+  width: 68px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.winBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #1e1e22;
+}
+
+/* ───────────────────── AUTHENTIC MACOS DOCK ───────────────────── */
+.dockAnchor {
+  position: fixed;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  z-index: 880;
+  max-width: calc(100vw - 16px);
+}
+
+.dockGlass {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(3px, 0.55vw, 7px);
+  padding: 5px 10px 6px;
+  border-radius: 20px;
+  background: rgba(30, 30, 36, 0.48);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 0.5px solid rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 18px 46px rgba(0, 0, 0, 0.55),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.3);
+}
+
+.dockDivider {
+  width: 1px;
+  height: 38px;
+  margin: 0 4px 5px;
+  background: rgba(255, 255, 255, 0.24);
+  flex-shrink: 0;
+}
+
+.dockItem {
+  position: relative;
+  border: none;
+  background: transparent;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transform-origin: bottom center;
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), margin 0.16s ease;
+}
+
+.dockItem > svg {
+  width: clamp(30px, 3.6vw, 46px);
+  height: clamp(30px, 3.6vw, 46px);
+}
+
+.dockItem:hover {
+  transform: translateY(-9px) scale(1.24);
+  margin: 0 4px;
+  z-index: 2;
+}
+
+.dockItem:active {
+  transform: translateY(-4px) scale(1.12);
+}
+
+.dockBouncing {
+  animation: dockBounce 0.45s cubic-bezier(0.28, 0.84, 0.42, 1);
+}
+
+@keyframes dockBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(-14px);
+  }
+}
+
+.dockTooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(34, 34, 38, 0.9);
+  backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.dockItem:hover .dockTooltip {
+  opacity: 1;
+}
+
+.dockRunningDot {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4.5px;
+  height: 4.5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+}
+
+.dockNotifBadge {
+  position: absolute;
+  top: -1px;
+  right: 0;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ff3b30;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* ───────────────────── SPOTLIGHT, LAUNCHPAD, CONTROL CENTER ───────────────────── */
+.spotlightBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 960;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 16vh;
+}
+
+.spotlightModal {
+  width: min(580px, calc(100vw - 32px));
+  border-radius: 14px;
+  background: rgba(34, 34, 38, 0.88);
+  backdrop-filter: blur(36px) saturate(200%);
+  -webkit-backdrop-filter: blur(36px) saturate(200%);
+  border: 0.5px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.72);
+  overflow: hidden;
+}
+
+.spotlightInputRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.spotlightInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.spotlightResults {
+  padding: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spotlightRow {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #f5f5f7;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.spotlightRow:hover {
+  background: #0a84ff;
+}
+
+.spotlightRow b {
+  display: block;
+  font-size: 13.5px;
+}
+
+.spotlightRow small {
+  font-size: 11.5px;
+  opacity: 0.72;
+}
+
+/* Launchpad Fullscreen Overlay */
+.launchpadOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: rgba(14, 16, 24, 0.62);
+  backdrop-filter: blur(38px) saturate(180%);
+  -webkit-backdrop-filter: blur(38px) saturate(180%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 54px 32px 96px;
+  gap: 28px;
+  animation: winPop 0.18s ease;
+}
+
+.launchpadSearch {
+  width: min(280px, 80vw);
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 0.5px solid rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 13.5px;
+  text-align: center;
+  outline: none;
+}
+
+.launchpadGrid {
+  width: min(860px, 100%);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 24px 16px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.launchpadItem {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.launchpadItem:hover {
+  transform: scale(1.08);
+}
+
+.launchpadItem span {
+  font-size: 12.5px;
+  font-weight: 500;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+/* Control Center Popover */
+.controlCenter {
+  position: fixed;
+  top: 34px;
+  right: 12px;
+  z-index: 970;
+  width: 312px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(34, 34, 40, 0.84);
+  backdrop-filter: blur(34px) saturate(200%);
+  -webkit-backdrop-filter: blur(34px) saturate(200%);
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.64);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ccGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ccCard {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ccToggleRow {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ccCircle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0a84ff;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.ccCircleOff {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.ccToggleRow b {
+  display: block;
+  font-size: 12px;
+}
+
+.ccToggleRow small {
+  font-size: 10.5px;
+  opacity: 0.7;
+}
+
+.ccSliderLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Notification Center Slide-over */
+.notifDrawer {
+  position: fixed;
+  top: 34px;
+  right: 12px;
+  z-index: 965;
+  width: 330px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(30, 30, 36, 0.86);
+  backdrop-filter: blur(34px) saturate(190%);
+  -webkit-backdrop-filter: blur(34px) saturate(190%);
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notifDrawerHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.notifItem {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.notifItem b {
+  display: block;
+  margin-bottom: 2px;
+  color: #ffffff;
+}
+
+/* Desktop Right-Click Context Menu */
+.contextMenu {
+  position: fixed;
+  z-index: 990;
+  min-width: 196px;
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(34, 34, 38, 0.9);
+  backdrop-filter: blur(32px) saturate(190%);
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.62);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* ───────────────────── SHARED APP INTERIOR STYLES ───────────────────── */
+.splitApp {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.appSidebar {
+  flex-shrink: 0;
+  padding: 12px 10px;
+  background: rgba(40, 40, 46, 0.72);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+}
+
+.sideSection {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: rgba(235, 235, 245, 0.45);
+  padding: 4px 8px;
+}
+
+.sideRow {
+  width: 100%;
+  padding: 6px 9px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: rgba(245, 245, 247, 0.88);
+  font-size: 12.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sideRow:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.sideRowOn {
+  background: rgba(10, 132, 255, 0.28) !important;
+  color: #ffffff;
+}
+
+.sideRowMuted {
+  padding: 4px 8px;
+  font-size: 11.5px;
+  color: rgba(235, 235, 245, 0.52);
+}
+
+.sideCount {
+  font-size: 11px;
+  color: rgba(235, 235, 245, 0.55);
+}
+
+.contentPad {
+  flex: 1;
+  min-width: 0;
+  padding: 18px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.paneHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.paneHeader h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.paneSub {
+  font-size: 12px;
+  color: rgba(235, 235, 245, 0.58);
+}
+
+/* Native macOS Buttons & Inputs */
+.macBtnPrimary,
+.macBtnSecondary,
+.macBtnDanger,
+.macBtnWarn,
+.macBtnGreen {
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.12s ease, transform 0.1s ease;
+}
+
+.macBtnPrimary:active,
+.macBtnSecondary:active,
+.macBtnDanger:active,
+.macBtnWarn:active,
+.macBtnGreen:active {
+  transform: scale(0.98);
+}
+
+.macBtnPrimary:disabled,
+.macBtnSecondary:disabled,
+.macBtnDanger:disabled,
+.macBtnWarn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.macBtnPrimary {
+  background: #0a84ff;
+  color: #ffffff;
+}
+
+.macBtnPrimary:hover:not(:disabled) {
+  background: #2393ff;
+}
+
+.macBtnSecondary {
+  background: rgba(255, 255, 255, 0.12);
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  color: #f5f5f7;
+}
+
+.macBtnSecondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.macBtnDanger {
+  background: #ff453a;
+  color: #ffffff;
+}
+
+.macBtnDanger:hover:not(:disabled) {
+  background: #ff5b52;
+}
+
+.macBtnWarn {
+  background: #ff9f0a;
+  color: #1c1c1e;
+}
+
+.macBtnGreen {
+  background: #30d158;
+  color: #0b1116;
+}
+
+.macInput,
+.macSearch {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.28);
+  color: #f5f5f7;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.macInput:focus,
+.macSearch:focus {
+  border-color: #0a84ff;
+}
+
+.macPill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e5e7eb;
+}
+
+.pill_red {
+  background: rgba(255, 69, 58, 0.2);
+  color: #ff8b85;
+}
+
+.pill_amber {
+  background: rgba(255, 159, 10, 0.22);
+  color: #ffd080;
+}
+
+.pill_cyan {
+  background: rgba(100, 210, 255, 0.18);
+  color: #8ce0ff;
+}
+
+/* ───────────────────── PINGME (MESSAGES) ───────────────────── */
+.msgSidebar {
+  width: 255px;
+  flex-shrink: 0;
+  background: rgba(38, 38, 44, 0.78);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebarSearchWrap {
+  padding: 10px 10px 8px;
+}
+
+.threadList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.threadRow {
+  width: 100%;
+  padding: 8px 8px 8px 4px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: #f5f5f7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.threadRow:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.threadRowOn {
+  background: #0a84ff !important;
+}
+
+.threadUnreadSlot {
+  width: 9px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.unreadBlueDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0a84ff;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.threadRowOn .unreadBlueDot {
+  background: #ffffff;
+}
+
+.avatarCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.threadMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.threadTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.threadTop b {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.threadTop span {
+  font-size: 11px;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+
+.threadPreview {
+  font-size: 12px;
+  opacity: 0.68;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.msgPane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1c1c20;
+}
+
+.msgHeader {
+  padding: 10px 16px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+  background: rgba(34, 34, 38, 0.72);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.msgToLabel {
+  color: rgba(235, 235, 245, 0.5);
+}
+
+.msgHeaderSub {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: rgba(235, 235, 245, 0.55);
+}
+
+.msgScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.msgDayStamp {
+  align-self: center;
+  font-size: 11px;
+  color: rgba(235, 235, 245, 0.45);
+  margin-bottom: 4px;
+}
+
+.imRow {
+  display: flex;
+  width: 100%;
+}
+
+.imRowMe {
+  justify-content: flex-end;
+}
+
+.imRowThem {
+  justify-content: flex-start;
+}
+
+.imBubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 13.5px;
+  line-height: 1.42;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.imBubble p {
+  margin: 0;
+}
+
+.imThem {
+  background: #2c2c30;
+  color: #f5f5f7;
+  border-bottom-left-radius: 6px;
+}
+
+.imMe {
+  background: #0a84ff;
+  color: #ffffff;
+  border-bottom-right-radius: 6px;
+}
+
+.imBubbleSaved {
+  box-shadow: 0 0 0 1.5px #30d158;
+}
+
+.imQuote {
+  border-left: 2.5px solid rgba(255, 255, 255, 0.65);
+  padding-left: 8px;
+  font-size: 11.5px;
+  opacity: 0.85;
+}
+
+.imFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.imTime {
+  font-size: 10.5px;
+  opacity: 0.65;
+}
+
+.imForwardBtn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 0.5px solid rgba(255, 255, 255, 0.24);
+  background: rgba(0, 0, 0, 0.25);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.imForwardBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.imSavedPill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.msgCompose {
+  padding: 10px 14px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  gap: 8px;
+}
+
+.msgComposeInput {
+  flex: 1;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.26);
+  color: #ffffff;
+  font-size: 13px;
+  outline: none;
+}
+
+.msgSendBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: #0a84ff;
+  color: #ffffff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ───────────────────── FACETIME / CALL LOGS ───────────────────── */
+.macList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.callRow {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.callLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.callName {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.callMeta {
+  font-size: 12px;
+  color: rgba(235, 235, 245, 0.58);
+}
+
+.callRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ───────────────────── PHOTOS ───────────────────── */
+.photosWorkspace {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.photoThumbRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.photoThumbCard {
+  padding: 4px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  color: #f5f5f7;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.photoThumbOn {
+  border-color: #0a84ff;
+  background: rgba(10, 132, 255, 0.16);
+}
+
+.photoThumbImg {
+  width: 100%;
+  height: 76px;
+  object-fit: cover;
+  border-radius: 7px;
+  display: block;
+}
+
+.photoThumbMeta {
+  padding: 5px 4px 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.photoThumbMeta b {
+  font-size: 11.5px;
+}
+
+.photoThumbMeta small {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.photoInspector {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(240px, 1fr);
+  gap: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.photoPreviewStage {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0d0d10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 210px;
+}
+
+.photoLargeImg {
+  width: 100%;
+  height: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  display: block;
+}
+
+.photoExifCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exifTitleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 15px;
+}
+
+.exifTitleRow span {
+  font-size: 11.5px;
+  opacity: 0.6;
+}
+
+.exifChip {
+  font-size: 12px;
+  color: #64d2ff;
+  font-weight: 600;
+}
+
+.exifCamera {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  color: rgba(235, 235, 245, 0.55);
+}
+
+.exifCaption {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.48;
+  color: rgba(245, 245, 247, 0.88);
+}
+
+/* ───────────────────── SAFARI ───────────────────── */
+.safariWrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.safariToolbar {
+  height: 40px;
+  padding: 0 12px;
+  background: #2c2c30;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.safariNavBtns {
+  display: flex;
+  gap: 4px;
+}
+
+.safariToolBtn {
+  width: 28px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(245, 245, 247, 0.85);
+  font-size: 17px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.safariToolBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.safariUrlPill {
+  flex: 1;
+  max-width: 440px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.34);
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: rgba(245, 245, 247, 0.86);
+}
+
+.safariLock {
+  font-size: 10.5px;
+  opacity: 0.72;
+}
+
+.safariTabStrip {
+  display: flex;
+  background: #232327;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.safariTab {
+  flex: 1;
+  height: 30px;
+  border: none;
+  border-right: 0.5px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: rgba(235, 235, 245, 0.65);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.safariTab:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.safariTabOn {
+  background: #333339;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.safariViewport {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px;
+  background: #f5f5f7;
+  color: #1d1d1f;
+}
+
+.webSheet {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+
+.webSheet h2 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.25;
+}
+
+.webSheet p {
+  margin: 0;
+}
+
+.webBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 11px;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.webMasthead {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #111827;
+}
+
+.webByline {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.rtoTable {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.rtoTable span {
+  display: block;
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.rtoTable b {
+  font-size: 14px;
+}
+
+.webBtn {
+  align-self: flex-start;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #0071e3;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.webBtn:hover:not(:disabled) {
+  background: #0077ed;
+}
+
+.safariStartPage {
+  max-width: 520px;
+  margin: 24px auto;
+}
+
+.safariFavGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.safariFavCard {
+  padding: 18px 12px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.safariFavCard span {
+  font-size: 28px;
+}
+
+/* ───────────────────── FINDER ───────────────────── */
+.finderMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.finderTopBar {
+  height: 38px;
+  padding: 0 14px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.finderTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.finderBody {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 245px minmax(0, 1fr);
+}
+
+.finderList {
+  border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+}
+
+.finderRow {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #f5f5f7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.finderRow:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.finderRowOn {
+  background: #0a84ff !important;
+}
+
+.finderRowMeta {
+  min-width: 0;
+}
+
+.finderRowMeta b {
+  display: block;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.finderRowMeta small {
+  font-size: 11px;
+  opacity: 0.68;
+}
+
+.finderPreview {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.finderPrevHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.finderPrevHead strong {
+  display: block;
+  font-size: 15px;
+}
+
+.finderPrevHead small {
+  font-size: 11.5px;
+  color: rgba(235, 235, 245, 0.56);
+}
+
+.finderPre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #e5e7eb;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+/* ───────────────────── NOTES ───────────────────── */
+.notesSidebar {
+  width: 230px;
+  flex-shrink: 0;
+  background: rgba(36, 36, 40, 0.8);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.notesSideHead {
+  padding: 10px 12px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffd60a;
+}
+
+.notesNewBtn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 214, 10, 0.16);
+  color: #ffd60a;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.notesListCol {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.noteListRow {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #f5f5f7;
+  text-align: left;
+  cursor: pointer;
+}
+
+.noteListRow:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.noteListRowOn {
+  background: rgba(255, 214, 10, 0.24) !important;
+}
+
+.noteListRow b {
+  display: block;
+  font-size: 13px;
+}
+
+.noteListSub {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  opacity: 0.65;
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.notesEditor {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 24px;
+  overflow-y: auto;
+  background: #1c1c1e;
+}
+
+.noteArticle {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.noteDateStamp {
+  font-size: 11.5px;
+  color: rgba(235, 235, 245, 0.48);
+  text-align: center;
+}
+
+.noteArticle h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.notePinHero {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #ffd60a;
+  padding: 14px 0 4px;
+}
+
+.noteSubCopy {
+  font-size: 13.5px;
+  color: rgba(245, 245, 247, 0.78);
+}
+
+.notePinChoices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.notePinBtn {
+  padding: 13px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 214, 10, 0.45);
+  background: rgba(255, 214, 10, 0.14);
+  color: #ffe666;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+
+.notePinBtn:hover:not(:disabled) {
+  background: #ffd60a;
+  color: #1c1c1e;
+}
+
+.noteSuccessBanner {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(48, 209, 88, 0.16);
+  border: 1px solid rgba(48, 209, 88, 0.5);
+  color: #86efac;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.noteTitleInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.noteBodyInput {
+  flex: 1;
+  min-height: 240px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: rgba(245, 245, 247, 0.9);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+/* ───────────────────── SYSTEM SETTINGS ───────────────────── */
+.appleIdCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.appleIdAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.appleIdCard b {
+  display: block;
+  font-size: 13px;
+}
+
+.appleIdCard small {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.setMiniIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.settingsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setRow {
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.setRow b {
+  display: block;
+  font-size: 13.5px;
+}
+
+.setRow small {
+  font-size: 12px;
+  color: rgba(235, 235, 245, 0.62);
+}
+
+.wallGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 12px;
+}
+
+.wallCard {
+  padding: 6px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.05);
+  color: #f5f5f7;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.wallCardOn {
+  border-color: #0a84ff;
+}
+
+.wallThumb {
+  width: 100%;
+  height: 78px;
+  border-radius: 7px;
+  display: block;
+}
+
+.aboutPane {
+  margin: auto;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.aboutLaptopGlyph {
+  font-size: 56px;
+}
+
+.aboutSpecs {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.aboutSpecs > div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.aboutSpecs span {
+  color: rgba(235, 235, 245, 0.55);
+}
+
+/* ───────────────────── BANGOVAULT ───────────────────── */
+.vaultCenter {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.vaultHeader {
+  text-align: center;
+}
+
+.vaultShield {
+  font-size: 30px;
+}
+
+.vaultHeader h3 {
+  margin: 4px 0 2px;
+  font-size: 17px;
+}
+
+.vaultHeader p {
+  margin: 0;
+  font-size: 12.5px;
+  color: rgba(235, 235, 245, 0.62);
+}
+
+.vaultDots {
+  display: flex;
+  gap: 10px;
+}
+
+.vaultSlot {
+  width: 46px;
+  height: 52px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.vaultSlotFilled {
+  border-color: #0a84ff;
+  background: rgba(10, 132, 255, 0.2);
+}
+
+.vaultPad {
+  display: grid;
+  grid-template-columns: repeat(3, 64px);
+  gap: 10px;
+}
+
+.vaultKey {
+  height: 50px;
+  border-radius: 12px;
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.vaultKey:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.vaultDossier {
+  flex: 1;
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.vaultStamp {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 69, 58, 0.16);
+  border: 1px solid rgba(255, 69, 58, 0.45);
+  color: #fca5a5;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.dossierRows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dossierRows span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: rgba(235, 235, 245, 0.55);
+}
+
+.dossierRows b {
+  font-size: 15.5px;
+}
+
+.contractorHighlight {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 22px !important;
+  color: #ffd60a;
+}
+
+.vaultActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ───────────────────── CHOLOMAP (MACOS MAPS) ───────────────────── */
+.mapSidebar {
+  width: 245px;
+  flex-shrink: 0;
+  background: rgba(34, 34, 40, 0.85);
+  border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mapSideHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.liveBadge {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #30d158;
+}
+
+.zoneList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.zoneItem {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+}
+
+.zoneItem:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.zoneItemOn {
+  background: rgba(10, 132, 255, 0.26) !important;
+  border-color: #0a84ff;
+}
+
+.zoneItem b {
+  display: block;
+  font-size: 13px;
+}
+
+.zoneItem small {
+  font-size: 11px;
+  opacity: 0.62;
+}
+
+.zoneSignalTag {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #ff453a;
+  color: #ffffff;
+}
+
+.zoneClearedTag {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 9.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(100, 210, 255, 0.2);
+  color: #8ce0ff;
+}
+
+.mapDispatchBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.mapSelSummary span {
+  display: block;
+  font-size: 10.5px;
+  color: rgba(235, 235, 245, 0.55);
+}
+
+.mapSelSummary b {
+  font-size: 14px;
+}
+
+.mapCanvasWrap {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
+/* ───────────────────── EXTRA MAC APPS ───────────────────── */
+
+/* Calculator */
+.calcWrap {
+  flex: 1;
+  background: #1c1c1e;
+  padding: 10px 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.calcScreen {
+  text-align: right;
+  padding: 4px 6px;
+}
+
+.calcExpr {
+  height: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.calcVal {
+  font-weight: 300;
+  line-height: 1.1;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.calcGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.calcBtn {
+  height: 50px;
+  border-radius: 999px;
+  border: none;
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 0.1s ease;
+}
+
+.calcBtn:active {
+  filter: brightness(1.3);
+}
+
+.calcFn {
+  background: #636366;
+  color: #ffffff;
+}
+
+.calcNum {
+  background: #3a3a3c;
+  color: #ffffff;
+}
+
+.calcOp {
+  background: #ff9f0a;
+  color: #ffffff;
+}
+
+.calcOpActive {
+  background: #ffffff;
+  color: #ff9f0a;
+}
+
+.calcZero {
+  grid-column: span 2;
+  text-align: left;
+  padding-left: 22px;
+}
+
+/* Terminal */
+.termWrap {
+  flex: 1;
+  min-height: 0;
+  background: #121216;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.termQuickBar {
+  padding: 6px 10px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: #1a1a20;
+}
+
+.termChip {
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #a5f3fc;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.termChip:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.termBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.termLine {
+  margin: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.48;
+  white-space: pre-wrap;
+}
+
+.termCmd {
+  color: #f8fafc;
+  font-weight: 700;
+}
+
+.termMuted {
+  color: #9ca3af;
+}
+
+.termErr {
+  color: #ff6961;
+}
+
+.termWarn {
+  color: #ffd60a;
+}
+
+.termGood {
+  color: #4ade80;
+}
+
+.termInputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.termPrompt {
+  color: #30d158;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.termInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 12.5px;
+}
+
+/* Mail */
+.mailListCol {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 0.5px solid rgba(255, 255, 255, 0.1);
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mailRow {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #f5f5f7;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mailRow:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mailRowOn {
+  background: #0a84ff !important;
+}
+
+.mailRowTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.mailFrom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mailTime {
+  font-size: 10.5px;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.mailSubj {
+  font-size: 12px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mailSnippet {
+  font-size: 11px;
+  opacity: 0.65;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mailReader {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.mailReaderHead {
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.mailReaderHead h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.mailMetaRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: rgba(235, 235, 245, 0.65);
+}
+
+.mailBody {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: rgba(245, 245, 247, 0.9);
+}
+
+.mailReplyBox {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.mailSentTag {
+  font-size: 12.5px;
+  color: #30d158;
+  font-weight: 600;
+}
+
+/* Calendar */
+.calMain {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.calHeader h3 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.calBadge {
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(255, 69, 58, 0.22);
+  color: #ff8b85;
+  font-weight: 600;
+}
+
+.calWeekRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 11px;
+  color: rgba(235, 235, 245, 0.52);
+}
+
+.calGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calCell {
+  padding: 6px;
+  border-radius: 8px;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f5f5f7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.calCellSel {
+  border-color: #0a84ff;
+  background: rgba(10, 132, 255, 0.18);
+}
+
+.calDayNum {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12.5px;
+}
+
+.calTodayPill {
+  background: #ff453a;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.calDots {
+  display: flex;
+  gap: 3px;
+}
+
+.calDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.calSide {
+  width: 235px;
+  padding: 14px;
+  background: rgba(34, 34, 40, 0.8);
+  border-left: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.calEmpty {
+  font-size: 12.5px;
+  color: rgba(235, 235, 245, 0.45);
+}
+
+.calEventList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calEventCard {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid #0a84ff;
+  font-size: 12.5px;
+}
+
+.calEventTime {
+  display: block;
+  font-size: 11px;
+  opacity: 0.62;
+}
+
+/* Music */
+.musicMain {
+  flex: 1;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.musicHero {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.albumArt {
+  width: 118px;
+  height: 118px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 46px;
+  color: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.48);
+  flex-shrink: 0;
+}
+
+.musicMeta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.musicKicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fa233b;
+}
+
+.musicMeta h3 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.musicMeta p {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.68;
+}
+
+.musicControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.musicPlayBtn {
+  padding: 6px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #fa233b;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.macIconBtn {
+  width: 32px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.musicProgress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.72;
+}
+
+.trackList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trackRow {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f7;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trackRow:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.trackRowOn {
+  background: rgba(250, 35, 59, 0.18) !important;
+}
+
+.trackNum {
+  width: 20px;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+.trackInfo {
+  flex: 1;
+}
+
+.trackInfo b {
+  display: block;
+  font-size: 13px;
+}
+
+.trackInfo small {
+  font-size: 11.5px;
+  opacity: 0.6;
+}
+
+.trackDur {
+  font-size: 12px;
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Weather */
+.wxWrap {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: linear-gradient(170deg, #102042 0%, #0b1326 60%, #0a0d1a 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wxHero {
+  text-align: center;
+}
+
+.wxCity {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.wxTemp {
+  font-size: 56px;
+  font-weight: 200;
+  line-height: 1.05;
+}
+
+.wxCond {
+  font-size: 13.5px;
+  opacity: 0.85;
+}
+
+.wxHL {
+  font-size: 12.5px;
+  opacity: 0.72;
+  margin-top: 2px;
+}
+
+.wxCard {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.wxCardTitle {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.58;
+  margin-bottom: 10px;
+}
+
+.wxHourlyRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  gap: 6px;
+}
+
+.wxHourCell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+}
+
+.wxGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+}
+
+.wxWeekRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 12.5px;
+}
+
+.wxMuted {
+  opacity: 0.58;
+}
+
+.wxBarTrack {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.wxBarFill {
+  display: block;
+  width: 68%;
+  margin-left: 16%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38bdf8, #f59e0b);
+}
+
+.wxMetrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.wxMiniCard {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wxMiniCard span {
+  font-size: 10px;
+  opacity: 0.58;
+  font-weight: 700;
+}
+
+.wxMiniCard b {
+  font-size: 20px;
+}
+
+.wxMiniCard small {
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+/* Clock */
+.clockWrap {
+  flex: 1;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.segmentedWrap {
+  display: inline-flex;
+  align-self: center;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.segBtn {
+  padding: 4px 14px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(245, 245, 247, 0.72);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segBtnOn {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.worldList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.worldRow {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.worldRow b {
+  display: block;
+  font-size: 16px;
+}
+
+.worldRow small {
+  font-size: 11.5px;
+  opacity: 0.58;
+}
+
+.worldTime {
+  font-size: 24px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+
+.swPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.swDisplay {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 48px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+}
+
+.swBtns {
+  display: flex;
+  gap: 12px;
+}
+
+.lapList {
+  width: 100%;
+  max-height: 130px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lapRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+}
+
+/* TextEdit */
+.textEditWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.textEditBar {
+  padding: 6px 14px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(235, 235, 245, 0.55);
+}
+
+.textEditArea {
+  flex: 1;
+  padding: 16px;
+  background: #1a1a1e;
+  border: none;
+  outline: none;
+  resize: none;
+  color: #f5f5f7;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13.5px;
+  line-height: 1.6;
+}

@@ -124,8 +124,18 @@ export default function MapBoard({
 
     init();
 
+    // Keep Leaflet tiles crisp whenever a macOS window opens, resizes, or maximizes
+    let ro = null;
+    if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+      ro = new ResizeObserver(() => {
+        mapRef.current?.invalidateSize({ animate: false });
+      });
+      ro.observe(containerRef.current);
+    }
+
     return () => {
       cancelled = true;
+      ro?.disconnect();
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;

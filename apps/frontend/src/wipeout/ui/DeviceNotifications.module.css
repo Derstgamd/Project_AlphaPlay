@@ -12,6 +12,40 @@
   align-items: flex-end;
 }
 
+/* Native macOS Sequoia Notification Banner (top-right, below 28px menu bar) */
+.notifAnchorMac {
+  top: 40px;
+  right: 16px;
+  bottom: auto;
+  z-index: 940;
+  width: min(378px, calc(100vw - 32px));
+}
+
+.cardMac,
+.cardMacDanger {
+  border-radius: 16px;
+  border-left: 0.5px solid rgba(255, 255, 255, 0.22);
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  background: rgba(34, 34, 40, 0.84);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.62),
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.22);
+}
+
+.cardMacDanger {
+  border-color: rgba(255, 95, 87, 0.52);
+  background: rgba(46, 22, 26, 0.88);
+}
+
+.miniBarMac {
+  border-radius: 12px;
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  background: rgba(34, 34, 40, 0.86);
+  backdrop-filter: blur(28px) saturate(190%);
+}
+
 .notifAnchorPhone {
   position: absolute;
   left: 10px;
